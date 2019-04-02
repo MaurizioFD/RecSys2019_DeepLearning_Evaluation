@@ -26,12 +26,16 @@ sudo apt install gcc
 sudo apt-get install python3-dev
 ```
 
-Then compile Cython algorithms. The code has been developed for Linux and Windows platforms. During the compilation you may see some warnings. 
+At this point you can compile all Cython algorithms by running the following command. The script will compile within the current active environment. The code has been developed for Linux and Windows platforms. During the compilation you may see some warnings. 
  
 ```Python
 python run_compile_all_cython.py
 ```
 
+### Matlab engine
+In addition to the repository dependencies, KDD CollaborativeDL also requires the Matlab engine, due to the fact that the algorithm is developed in Matlab. 
+To install the engine you can use a script provided directly with your Matlab distribution, as described in the [Matlab Documentation](https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html).
+The algorithm requires also a GSL distribution, whose installation folder can be provided as a parameter in the fit function of our Python wrapper. Please refer to the original [CollaborativeDL README](Conferences/KDD/CollaborativeDL_github_matlab/README.md) for all installation details.
 
 ## Run the experiments
 
