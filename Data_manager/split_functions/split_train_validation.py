@@ -11,39 +11,6 @@ import numpy as np
 import scipy.sparse as sps
 
 from Data_manager.IncrementalSparseMatrix import IncrementalSparseMatrix
-#
-# def split_train_validation(URM_train):
-#
-#     row_ind_validation = []
-#     col_ind_validation = []
-#     data_validation = []
-#
-#
-#
-#     for user_id in range(URM_train.shape[0]):
-#
-#         start_pos = URM_train.indptr[user_id]
-#         end_pos = URM_train.indptr[user_id+1]
-#
-#         selected_item_pos = np.random.randint(0, end_pos-start_pos)
-#
-#         selected_item = URM_train.indices[start_pos + selected_item_pos]
-#
-#         URM_train.data[start_pos + selected_item_pos] = 0
-#
-#         row_ind_validation.append(user_id)
-#         col_ind_validation.append(selected_item)
-#         data_validation.append(1.0)
-#
-#
-#     URM_train.eliminate_zeros()
-#
-#     URM_validation = sps.csr_matrix((data_validation, (row_ind_validation, col_ind_validation)), shape=URM_train.shape)
-#
-#     return URM_train, URM_validation
-
-
-
 
 
 

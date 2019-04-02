@@ -17,7 +17,7 @@ from Data_manager.DataReader import DataReader
 
 class NetflixPrizeReader(DataReader):
 
-    DATASET_URL = "https://polimi365-my.sharepoint.com/:u:/g/personal/10322330_polimi_it/EdX5jX9JDZ9JrOVps8juXvgBoUinNv_NseHmD3hMcYfsRA?e=uHyaUl"
+    DATASET_URL = "https://drive.google.com/file/d/1MsOxbWQu-paIILQ9Tp_rKUmUxkkPjfqV/view?usp=sharing"
     DATASET_SUBFOLDER = "NetflixPrize/"
     AVAILABLE_ICM = []
     DATASET_SPECIFIC_MAPPER = []

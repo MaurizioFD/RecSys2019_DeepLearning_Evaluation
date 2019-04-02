@@ -45,6 +45,8 @@ def check_matrix(X, format='csc', dtype=np.float32):
         return X.astype(dtype)
 
 
+
+
 def similarityMatrixTopK(item_weights, k=100, verbose = False):
     """
     The function selects the TopK most similar elements, column-wise
@@ -114,124 +116,6 @@ def similarityMatrixTopK(item_weights, k=100, verbose = False):
 
     return W_sparse
 
-
-
-
-def areURMequals(URM1, URM2):
-
-    if(URM1.shape != URM2.shape):
-        return False
-
-    return (URM1-URM2).nnz ==0
-
-
-def removeTopPop(URM_1, URM_2=None, percentageToRemove=0.2):
-    """
-    Remove the top popular items from the matrix
-    :param URM_1: user X items
-    :param URM_2: user X items
-    :param percentageToRemove: value 1 corresponds to 100%
-    :return: URM: user X selectedItems, obtained from URM_1
-             Array: itemMappings[selectedItemIndex] = originalItemIndex
-             Array: removedItems
-    """
-
-
-    item_pop = URM_1.sum(axis=0)  # this command returns a numpy.matrix of size (1, nitems)
-
-    if URM_2 != None:
-
-        assert URM_2.shape[1] == URM_1.shape[1], \
-            "The two URM do not contain the same number of columns, URM_1 has {}, URM_2 has {}".format(URM_1.shape[1], URM_2.shape[1])
-
-        item_pop += URM_2.sum(axis=0)
-
-
-    item_pop = np.asarray(item_pop).squeeze()  # necessary to convert it into a numpy.array of size (nitems,)
-    popularItemsSorted = np.argsort(item_pop)[::-1]
-
-    numItemsToRemove = int(len(popularItemsSorted)*percentageToRemove)
-
-    # Choose which columns to keep
-    itemMask = np.in1d(np.arange(len(popularItemsSorted)), popularItemsSorted[:numItemsToRemove],  invert=True)
-
-    # Map the column index of the new URM to the original ItemID
-    itemMappings = np.arange(len(popularItemsSorted))[itemMask]
-
-    removedItems = np.arange(len(popularItemsSorted))[np.logical_not(itemMask)]
-
-    return URM_1[:,itemMask], itemMappings, removedItems
-
-#
-#
-# def load_edges (filePath, header = False):
-#
-#     values, rows, cols = [], [], []
-#
-#     fileHandle = open(filePath, "r")
-#     numCells = 0
-#
-#     if header:
-#         fileHandle.readline()
-#
-#     for line in fileHandle:
-#         numCells += 1
-#         if (numCells % 1000000 == 0):
-#             print("Processed {} cells".format(numCells))
-#
-#         if (len(line)) > 1:
-#             line = line.split(",")
-#
-#             value = line[2].replace("\n", "")
-#
-#             if not value == "0" and not value == "NaN":
-#                 rows.append(int(line[0]))
-#                 cols.append(int(line[1]))
-#                 values.append(float(value))
-#
-#     return  sps.csr_matrix((values, (rows, cols)), dtype=np.float32)
-
-
-
-def addZeroSamples(S_matrix, numSamplesToAdd):
-
-    n_items = S_matrix.shape[1]
-
-    S_matrix_coo = S_matrix.tocoo()
-
-    row_index = list(S_matrix_coo.row)
-    col_index = list(S_matrix_coo.col)
-    data = list(S_matrix_coo.data)
-
-    existingSamples = set(zip(row_index, col_index))
-
-    addedSamples = 0
-    consecutiveFailures = 0
-
-    while (addedSamples < numSamplesToAdd):
-
-        item1 = np.random.randint(0, n_items)
-        item2 = np.random.randint(0, n_items)
-
-        if (item1 != item2 and (item1, item2) not in existingSamples):
-
-            row_index.append(item1)
-            col_index.append(item2)
-            data.append(0)
-
-            existingSamples.add((item1, item2))
-
-            addedSamples += 1
-            consecutiveFailures = 0
-
-        else:
-            consecutiveFailures += 1
-
-        if (consecutiveFailures >= 100):
-            raise SystemExit(
-                "Unable to generate required zero samples, termination at 100 consecutive discarded samples")
-
-    return row_index, col_index, data
 
 
 def reshapeSparse(sparseMatrix, newShape):

@@ -9,83 +9,6 @@ Created on 22/11/18
 import numpy as np
 
 
-
-
-def split_big_CSR_in_columns(sparse_matrix_to_split, num_split = 2):
-    """
-    The function returns a list of split for the given matrix
-    :param sparse_matrix_to_split:
-    :param num_split:
-    :return:
-    """
-
-    assert sparse_matrix_to_split.shape[1]>0, "split_big_CSR_in_columns: sparse_matrix_to_split has no columns"
-    assert num_split>=1 and num_split <= sparse_matrix_to_split.shape[1], "split_big_CSR_in_columns: num_split parameter not valid, value must be between 1 and {}, provided was {}".format(sparse_matrix_to_split.shape[1], num_split)
-
-
-    if num_split == 1:
-        return [sparse_matrix_to_split]
-
-
-
-    n_column_split = int(sparse_matrix_to_split.shape[1]/num_split)
-
-    sparse_matrix_split_list = []
-
-    for num_current_split in range(num_split):
-
-        start_col = n_column_split*num_current_split
-
-        if num_current_split +1 == num_split:
-            end_col = sparse_matrix_to_split.shape[1]
-        else:
-            end_col = n_column_split*(num_current_split + 1)
-
-        print("split_big_CSR_in_columns: Split {}, columns: {}-{}".format(num_current_split, start_col, end_col))
-
-        sparse_matrix_split_list.append(sparse_matrix_to_split[:,start_col:end_col])
-
-    return sparse_matrix_split_list
-
-
-
-
-
-
-
-
-
-def remove_empty_rows_and_cols(URM, ICM = None):
-
-    URM = check_matrix(URM, "csr")
-    rows = URM.indptr
-    numRatings = np.ediff1d(rows)
-    user_mask = numRatings >= 1
-
-    URM = URM[user_mask,:]
-
-    cols = URM.tocsc().indptr
-    numRatings = np.ediff1d(cols)
-    item_mask = numRatings >= 1
-
-    URM = URM[:,item_mask]
-
-    removedUsers = np.arange(0, len(user_mask))[np.logical_not(user_mask)]
-    removedItems = np.arange(0, len(item_mask))[np.logical_not(item_mask)]
-
-    if ICM is not None:
-
-        ICM = ICM[item_mask,:]
-
-        return URM.tocsr(), ICM.tocsr(), removedUsers, removedItems
-
-
-    return URM.tocsr(), removedUsers, removedItems
-
-
-
-
-
 from Data_manager.IncrementalSparseMatrix import IncrementalSparseMatrix
 
 
@@ -281,19 +204,3 @@ def downloadFromURL(URL, folder_path, file_name):
     sys.stdout.write("\n")
     sys.stdout.flush()
 
-
-
-
-
-
-
-
-def invert_dictionary(id_to_index):
-
-    index_to_id = {}
-
-    for id in id_to_index.keys():
-        index = id_to_index[id]
-        index_to_id[index] = id
-
-    return index_to_id

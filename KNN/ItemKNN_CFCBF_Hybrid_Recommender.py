@@ -17,10 +17,6 @@ class ItemKNN_CFCBF_Hybrid_Recommender(ItemKNNCBFRecommender, BaseSimilarityMatr
 
     RECOMMENDER_NAME = "ItemKNN_CFCBF_HybridRecommender"
 
-    def __init__(self, ICM, URM_train):
-        super(ItemKNN_CFCBF_Hybrid_Recommender, self).__init__(ICM, URM_train)
-
-
     def fit(self, ICM_weight = 1.0, **fit_args):
 
         self.ICM = self.ICM*ICM_weight

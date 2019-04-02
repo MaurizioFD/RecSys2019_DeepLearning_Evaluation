@@ -17,10 +17,6 @@ class ItemKNNCustomSimilarityRecommender(BaseSimilarityMatrixRecommender):
 
     RECOMMENDER_NAME = "ItemKNNCustomSimilarityRecommender"
 
-    def __init__(self, URM_train):
-        super(ItemKNNCustomSimilarityRecommender, self).__init__(URM_train)
-
-
     def fit(self, W_sparse, selectTopK = False, topK=100):
 
         assert W_sparse.shape[0] == W_sparse.shape[1],\

@@ -25,11 +25,6 @@ class MovielensHetrec2011Reader(DataReader):
 
     IS_IMPLICIT = False
 
-
-    def __init__(self):
-        super(MovielensHetrec2011Reader, self).__init__()
-
-
     def _get_dataset_name_root(self):
         return self.DATASET_SUBFOLDER
 
