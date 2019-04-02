@@ -1,0 +1,20 @@
+function tempm 
+para_gpuDevice=4;
+para_layers=[8000,1000,200,50];
+para_blayers=[1,1,1,1];
+para_lv=100;
+para_lu=0.01;
+para_ln=1e4;
+para_pretrain=727;
+para_save=999;
+para_folder=49;
+para_dropout=0.2;
+para_from=1;
+para_sdae_n_epoch=1000;
+para_save_lag=10000;
+fprintf('The pid is: %d\n',feature('getpid'));
+cdl_worker(para_gpuDevice,para_layers,para_blayers,...
+    para_lv,para_lu,para_ln,para_pretrain,para_save,...
+    para_folder,para_dropout,para_from,para_sdae_n_epoch,...
+    para_save_lag);
+exit;

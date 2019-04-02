@@ -1,0 +1,13 @@
+MODEL = 'SpectralCF'
+DATASET = 'ml-1m'
+
+EMB_DIM = 16
+BATCH_SIZE = 1024
+DECAY = 0.001
+LAMDA = 1
+K = 3
+N_EPOCH = 200
+LR = 0.001
+DROPOUT = 0.0
+
+DIR = './data/'+DATASET+'/'

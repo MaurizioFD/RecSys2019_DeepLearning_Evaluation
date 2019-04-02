@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on 08/11/18
+
+@author: Anonymous authors
+"""
+
+
+
+
+import os, zipfile, shutil
+
+import numpy as np
+import scipy.sparse as sps
+
+from Data_manager.IncrementalSparseMatrix import IncrementalSparseMatrix
+from Data_manager.load_and_save_data import load_data_dict, save_data_dict
+
+from Data_manager.Movielens100K.Movielens100KReader import Movielens100KReader as Movielens100KReader_DataManager
+
+class Movielens100KReader(object):
+
+
+    def __init__(self):
+
+        super(Movielens100KReader, self).__init__()
+
+
+        pre_splitted_path = "Data_manager_split_datasets/Movielens100K/KDD/MCRec_our_interface/"
+
+        pre_splitted_filename = "splitted_data"
+
+        original_data_path = "Conferences/KDD/MCRec_github/data/"
+
+        # If directory does not exist, create
+        if not os.path.exists(pre_splitted_path):
+            os.makedirs(pre_splitted_path)
+
+        try:
+
+            print("Movielens100KReader: Attempting to load pre-splitted data")
+
+            for attrib_name, attrib_object in load_data_dict(pre_splitted_path, pre_splitted_filename).items():
+                 self.__setattr__(attrib_name, attrib_object)
+
+
+        except FileNotFoundError:
+
+            print("Movielens100KReader: Pre-splitted data not found, building new one")
+
+            print("Movielens100KReader: loading URM")
+
+
+            from Conferences.KDD.MCRec_github.code.Dataset import Dataset
+
+            dataset = 'ml-100k'
+
+            dataset = Dataset(original_data_path + dataset)
+            URM_train, testRatings, testNegatives = dataset.trainMatrix, dataset.testRatings, dataset.testNegatives
+
+            # Dataset adds 1 to user and item id, removing it to restore 0 indexing
+            URM_train = sps.coo_matrix(URM_train)
+            URM_train.row -= 1
+            URM_train.col -= 1
+
+            self.URM_train = sps.csr_matrix((np.ones_like(URM_train.data), (URM_train.row, URM_train.col)))
+
+
+            num_users, num_items = self.URM_train.shape
+
+
+
+            # Build sparse matrices from lists
+            URM_test_builder = IncrementalSparseMatrix(n_rows=num_users, n_cols=num_items)
+            URM_test_negative_builder = IncrementalSparseMatrix(n_rows=num_users, n_cols=num_items)
+
+
+            for user_index in range(len(testRatings)):
+
+                user_id = testRatings[user_index][0]
+                current_user_test_items = testRatings[user_index][1:]
+                current_user_test_negative_items = testNegatives[user_index]
+
+                current_user_test_items = np.array(current_user_test_items) -1
+                current_user_test_negative_items = np.array(current_user_test_negative_items) -1
+
+                URM_test_builder.add_single_row(user_id -1, current_user_test_items, 1.0)
+                URM_test_negative_builder.add_single_row(user_id -1, current_user_test_negative_items, 1.0)
+
+
+
+            # the test data has repeated data, apparently
+            self.URM_test = URM_test_builder.get_SparseMatrix()
+
+            self.URM_test_negative = URM_test_negative_builder.get_SparseMatrix()
+
+
+            # Split validation from train as 10%
+            from Data_manager.split_functions.split_train_validation import split_train_validation_percentage_user_wise
+
+            self.URM_train, self.URM_validation = split_train_validation_percentage_user_wise(self.URM_train, train_percentage=0.9)
+
+
+            # Load features
+
+            data_reader = Movielens100KReader_DataManager()
+            data_reader.load_data()
+
+            zipFile_path = data_reader.DATASET_SPLIT_ROOT_FOLDER + data_reader.DATASET_SUBFOLDER
+            dataFile = zipfile.ZipFile(zipFile_path + "ml-100k.zip")
+
+            ICM_path = dataFile.extract("ml-100k/u.item", path=zipFile_path + "decompressed/")
+
+            ICM_genre = self._loadICM(ICM_path)
+            ICM_genre = ICM_genre.get_SparseMatrix()
+
+            shutil.rmtree(zipFile_path + "decompressed", ignore_errors=True)
+
+            self.ICM_dict = {"ICM_genre": ICM_genre}
+
+
+            data_dict = {
+                "URM_train": self.URM_train,
+                "URM_test": self.URM_test,
+                "URM_validation": self.URM_validation,
+                "URM_test_negative": self.URM_test_negative,
+                "ICM_dict": self.ICM_dict,
+
+            }
+
+            save_data_dict(data_dict, pre_splitted_path, pre_splitted_filename)
+
+            print("Movielens100KReader: loading complete")
+
+
+
+
+    def _loadICM (self, filePath, header = False, separator="|"):
+
+        ICM_builder = IncrementalSparseMatrix(auto_create_col_mapper=True, auto_create_row_mapper=True)
+
+        fileHandle = open(filePath, "r", encoding="latin1")
+        numCells = 0
+
+        if header:
+            fileHandle.readline()
+
+        for line in fileHandle:
+            numCells += 1
+            if (numCells % 1000000 == 0):
+                print("Processed {} cells".format(numCells))
+
+            if (len(line)) > 1:
+                line = line.split(separator)
+
+                line[-1] = line[-1].replace("\n", "")
+
+                genre_list = [int(genre_bit) for genre_bit in line[5:]]
+                item_id = int(line[0])-1
+
+                ICM_builder.add_data_lists([item_id]*len(genre_list), genre_list, [1.0]*len(genre_list))
+
+
+        fileHandle.close()
+
+        return  ICM_builder
