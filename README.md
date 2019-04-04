@@ -43,10 +43,10 @@ See see the following [Installation](#Installation) section for information on h
 After the installation is complete you can run the experiments.
 
 
-All experiments related to a DL algorithm reported in our paper can be executed by running the corresponding script, which is preceeded by _run_ParameterSearch_.
+All experiments related to a DL algorithm reported in our paper can be executed by running the corresponding script, which is preceeded by _run__, the conference name and the year of publication.
 For example, if you want to run the experiments for SpectralCF, you should run this command:
 ```Python
-python run_ParameterSearch_RecSys_18_SpectralCF.py
+python run_RecSys_18_SpectralCF.py
 ```
 
 The script will:
