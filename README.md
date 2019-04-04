@@ -50,7 +50,7 @@ python run_ParameterSearch_RecSys_18_SpectralCF.py
 ```
 
 The script will:
-* Load the original data split, if available. If not, automatically download the dataset and perform the split with the appropriate methodology. If the dataset cannot be downloaded automatically, a console message will display the link at which the dataset can be manually downloaded and instructions on where the user should save the compressed file.
+* Load and split the data.
 * Run the bayesian hyperparameter optimization on all baselines, saving the best values found.
 * Run the fit and test of the DL algorithm
 * Create the latex code of the result tables, as well as plot the data splits, when required. 
