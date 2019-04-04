@@ -20,7 +20,7 @@ Note that in some cases the original repository contained also the data split us
 Other folders like KNN and GraphBased contain all the baseline algorithms we have used in our experiments.
 
 #### Evaluation
-The folder _Base.Evaluation_ contains the two evaluator objects (_EvaluatorHoldout_, _EvaluatorNegativeSample_) which compute all the metric we report.
+The folder _Base.Evaluation_ contains the two evaluator objects (_EvaluatorHoldout_, _EvaluatorNegativeSample_) which compute all the metrics we report.
 
 #### Data
 The data to be used for each experiments is gathered from specific _DataReader_ objects withing each DL algoritm's folder. 
@@ -32,7 +32,7 @@ Whenever a new dataset is parsed, the preprocessed data is saved in a new folder
 
 #### Hyperparameter optimization
 Folder _ParameterTuning_ contains all the code required to tune the hyperparameters of the baselines. The script _run_parameter_search_ contains the fixed hyperparameters search space used in all our experiments.
-The object _SearchBayesianSkopt_ does the hyperparameter optimization for a given recommender instance and hyperparameter space, saving the explored configuration and correspondingr recommendation quality. 
+The object _SearchBayesianSkopt_ does the hyperparameter optimization for a given recommender instance and hyperparameter space, saving the explored configuration and corresponding recommendation quality. 
 
 
 
