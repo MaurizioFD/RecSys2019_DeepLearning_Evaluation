@@ -7,6 +7,7 @@ Created on 14/12/18
 """
 
 import pickle, time, os
+import numpy as np
 
 from skopt import gp_minimize
 from skopt.space import Real, Integer, Categorical
@@ -34,7 +35,8 @@ class SearchBayesianSkopt(SearchAbstractClass):
                           n_random_starts = 20,
                           n_points = 10000,
                           n_jobs = 1,
-                          noise = 'gaussian',
+                          # noise = 'gaussian',
+                          noise = 1e-5,
                           acq_func = 'gp_hedge',
                           acq_optimizer = 'auto',
                           random_state = None,
@@ -245,102 +247,114 @@ class SearchBayesianSkopt(SearchAbstractClass):
 
     def _objective_function(self, current_fit_parameters_dict):
 
-        result_dict, _, recommender_instance, train_time, evaluation_time = self._evaluate(current_fit_parameters_dict)
+        try:
 
-        current_result = - result_dict[self.metric_to_optimize]
+            result_dict, _, recommender_instance, train_time, evaluation_time = self._evaluate(current_fit_parameters_dict)
 
-        # If the recommender uses Earlystopping, get the selected number of epochs
-        if isinstance(recommender_instance, Incremental_Training_Early_Stopping):
+            current_result = - result_dict[self.metric_to_optimize]
 
-            n_epochs_early_stopping_dict = recommender_instance.get_early_stopping_final_epochs_dict()
-            current_fit_parameters_dict = current_fit_parameters_dict.copy()
+            # If the recommender uses Earlystopping, get the selected number of epochs
+            if isinstance(recommender_instance, Incremental_Training_Early_Stopping):
 
-            for epoch_label in n_epochs_early_stopping_dict.keys():
+                n_epochs_early_stopping_dict = recommender_instance.get_early_stopping_final_epochs_dict()
+                current_fit_parameters_dict = current_fit_parameters_dict.copy()
 
-                epoch_value = n_epochs_early_stopping_dict[epoch_label]
-                current_fit_parameters_dict[epoch_label] = epoch_value
+                for epoch_label in n_epochs_early_stopping_dict.keys():
 
-
-
-
-        if self.save_metadata:
-            self.metadata_dict["parameters_list"][self.model_counter] = current_fit_parameters_dict.copy()
-            self.metadata_dict["validation_result_list"][self.model_counter] = result_dict.copy()
-            self.metadata_dict["train_time_list"][self.model_counter] = train_time
-            self.metadata_dict["evaluation_time_list"][self.model_counter] = evaluation_time
-            self.metadata_dict["train_time_total"] += train_time
-            self.metadata_dict["evaluation_time_total"] += evaluation_time
-
-            self.metadata_dict["train_time_avg"] = self.metadata_dict["train_time_total"]/(self.model_counter+1)
-            self.metadata_dict["evaluation_time_avg"] = self.metadata_dict["evaluation_time_total"]/(self.model_counter+1)
+                    epoch_value = n_epochs_early_stopping_dict[epoch_label]
+                    current_fit_parameters_dict[epoch_label] = epoch_value
 
 
 
-
-        # Always save best model separately
-        if self.save_model == "all":
-
-            print("{}: Saving model in {}\n".format(self.ALGORITHM_NAME, self.output_folder_path + self.output_file_name_root))
-
-            recommender_instance.saveModel(self.output_folder_path, file_name = self.output_file_name_root + "_model_{}".format(self.model_counter))
-
-
-
-        if self.best_solution_val == None or self.best_solution_val < result_dict[self.metric_to_optimize]:
-
-            writeLog("{}: New best config found. Config {}: {} - results: {}\n".format(self.ALGORITHM_NAME,
-                                                                                       self.model_counter,
-                                                                                       current_fit_parameters_dict,
-                                                                                       result_dict), self.log_file)
-
-            self.best_solution_val = result_dict[self.metric_to_optimize]
-            self.best_solution_counter = self.model_counter
-            self.best_solution_parameters = current_fit_parameters_dict.copy()
 
             if self.save_metadata:
-                self.metadata_dict["best_parameters"] = current_fit_parameters_dict.copy()
-                self.metadata_dict["best_result_validation"] = result_dict.copy()
-                self.metadata_dict["best_parameters_index"] = self.best_solution_counter
+                self.metadata_dict["parameters_list"][self.model_counter] = current_fit_parameters_dict.copy()
+                self.metadata_dict["validation_result_list"][self.model_counter] = result_dict.copy()
+                self.metadata_dict["train_time_list"][self.model_counter] = train_time
+                self.metadata_dict["evaluation_time_list"][self.model_counter] = evaluation_time
+                self.metadata_dict["train_time_total"] += train_time
+                self.metadata_dict["evaluation_time_total"] += evaluation_time
+
+                self.metadata_dict["train_time_avg"] = self.metadata_dict["train_time_total"]/(self.model_counter+1)
+                self.metadata_dict["evaluation_time_avg"] = self.metadata_dict["evaluation_time_total"]/(self.model_counter+1)
 
 
 
 
+            # Always save best model separately
+            if self.save_model == "all":
 
-            if self.save_model != "no":
                 print("{}: Saving model in {}\n".format(self.ALGORITHM_NAME, self.output_folder_path + self.output_file_name_root))
-                recommender_instance.saveModel(self.output_folder_path, file_name =self.output_file_name_root + "_best_model")
+
+                recommender_instance.saveModel(self.output_folder_path, file_name = self.output_file_name_root + "_model_{}".format(self.model_counter))
 
 
-            if self.evaluator_test is not None:
-                result_dict_test, evaluation_test_time = self._evaluate_on_test(recommender_instance)
 
+            if self.best_solution_val == None or self.best_solution_val < result_dict[self.metric_to_optimize]:
+
+                writeLog("{}: New best config found. Config {}: {} - results: {}\n".format(self.ALGORITHM_NAME,
+                                                                                           self.model_counter,
+                                                                                           current_fit_parameters_dict,
+                                                                                           result_dict), self.log_file)
+
+                self.best_solution_val = result_dict[self.metric_to_optimize]
+                self.best_solution_counter = self.model_counter
+                self.best_solution_parameters = current_fit_parameters_dict.copy()
 
                 if self.save_metadata:
-                    self.metadata_dict["best_result_test"] = result_dict_test.copy()
-                    self.metadata_dict["test_result_list"][self.model_counter] = result_dict_test.copy()
-                    self.metadata_dict["evaluation_test_time_list"][self.model_counter] = evaluation_test_time
-                    self.metadata_dict["evaluation_test_time_total"] += evaluation_test_time
-
-                    tested_models = sum([value is not None for value in self.metadata_dict["test_result_list"]])
-
-                    self.metadata_dict["evaluation_test_time_avg"] = self.metadata_dict["evaluation_test_time_total"]/tested_models
+                    self.metadata_dict["best_parameters"] = current_fit_parameters_dict.copy()
+                    self.metadata_dict["best_result_validation"] = result_dict.copy()
+                    self.metadata_dict["best_parameters_index"] = self.best_solution_counter
 
 
 
-        else:
-            writeLog("{}: Config {} is suboptimal. Config: {} - results: {}\n".format(self.ALGORITHM_NAME,
-                                                                                      self.model_counter,
-                                                                                      current_fit_parameters_dict,
-                                                                                      result_dict), self.log_file)
+
+
+                if self.save_model != "no":
+                    print("{}: Saving model in {}\n".format(self.ALGORITHM_NAME, self.output_folder_path + self.output_file_name_root))
+                    recommender_instance.saveModel(self.output_folder_path, file_name =self.output_file_name_root + "_best_model")
+
+
+                if self.evaluator_test is not None:
+                    result_dict_test, evaluation_test_time = self._evaluate_on_test(recommender_instance)
+
+
+                    if self.save_metadata:
+                        self.metadata_dict["best_result_test"] = result_dict_test.copy()
+                        self.metadata_dict["test_result_list"][self.model_counter] = result_dict_test.copy()
+                        self.metadata_dict["evaluation_test_time_list"][self.model_counter] = evaluation_test_time
+                        self.metadata_dict["evaluation_test_time_total"] += evaluation_test_time
+
+                        tested_models = sum([value is not None for value in self.metadata_dict["test_result_list"]])
+
+                        self.metadata_dict["evaluation_test_time_avg"] = self.metadata_dict["evaluation_test_time_total"]/tested_models
 
 
 
-        if self.save_metadata:
+            else:
+                writeLog("{}: Config {} is suboptimal. Config: {} - results: {}\n".format(self.ALGORITHM_NAME,
+                                                                                          self.model_counter,
+                                                                                          current_fit_parameters_dict,
+                                                                                          result_dict), self.log_file)
 
-            pickle.dump(self.metadata_dict.copy(),
-                        open(self.output_folder_path + self.output_file_name_root + "_metadata", "wb"),
-                        protocol=pickle.HIGHEST_PROTOCOL)
 
+
+            if self.save_metadata:
+
+                pickle.dump(self.metadata_dict.copy(),
+                            open(self.output_folder_path + self.output_file_name_root + "_metadata", "wb"),
+                            protocol=pickle.HIGHEST_PROTOCOL)
+
+        except Exception as exc:
+
+            writeLog("{}: Config {} Exception. Config: {} - Exception: {}\n".format(self.ALGORITHM_NAME,
+                                                                                  self.model_counter,
+                                                                                  current_fit_parameters_dict,
+                                                                                  str(exc)), self.log_file)
+
+            # Assign to this configuration the worst possible score
+            # Being a minimization problem, set it to the max value of a float
+            current_result = + np.finfo(np.float16).max
 
 
         self.model_counter += 1
