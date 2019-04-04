@@ -17,7 +17,7 @@ from Data_manager.DataReader import DataReader
 
 class NetflixPrizeReader(DataReader):
 
-    DATASET_URL = "https://drive.google.com/file/d/1MsOxbWQu-paIILQ9Tp_rKUmUxkkPjfqV/view?usp=sharing"
+    DATASET_URL = "https://www.kaggle.com/netflix-inc/netflix-prize-data"
     DATASET_SUBFOLDER = "NetflixPrize/"
     AVAILABLE_ICM = []
     DATASET_SPECIFIC_MAPPER = []

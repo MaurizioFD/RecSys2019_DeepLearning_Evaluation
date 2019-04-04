@@ -68,7 +68,7 @@ def read_data_split_and_search_SpectralCF(dataset_name, cold_start=False, cold_i
     from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
 
     assert_implicit_data([URM_train, URM_validation, URM_test])
-    if not cold_start: assert_disjoint_matrices([URM_train, URM_validation, URM_test])
+    assert_disjoint_matrices([URM_train, URM_validation, URM_test])
 
 
     # If directory does not exist, create
@@ -147,10 +147,6 @@ def read_data_split_and_search_SpectralCF(dataset_name, cold_start=False, cold_i
     if isSpectralCF_train:
         try:
 
-
-            temp_file_folder = output_folder_path + "SpectralCF_log/"
-
-
             spectralCF_article_parameters = {
                 "epochs": 1000,
                 "batch_size": 1024,
@@ -161,7 +157,7 @@ def read_data_split_and_search_SpectralCF(dataset_name, cold_start=False, cold_i
             }
 
             spectralCF_earlystopping_parameters = {
-                "validation_every_n": 10,
+                "validation_every_n": 5,
                 "stop_on_validation": True,
                 "lower_validations_allowed": 20,
                 "evaluator_object": evaluator_validation,
@@ -233,14 +229,18 @@ def read_data_split_and_search_SpectralCF(dataset_name, cold_start=False, cold_i
 
 
 if __name__ == '__main__':
-
+    # isKNN_multiprocess = True: knn parameter search in parallel among multiple process (fast), False: search in sequential way (slow, but no worry for deadlock)
     isKNN_multiprocess = True
+    # isKNN_tune = True: knn parameter search, False: avoid this step
     isKNN_tune = True
+    # isSpectralCF_train = True: train the SpectralCF model, False: avoid this step
     isSpectralCF_train = True
+    # print_results = True: print the results read from the output folder, False: avoid this step
     print_results = True
-    print_popularity_bias_movielens1m = False
+    # print_popularity_bias = True: print popularity bias for movielens1m, False: avoid this step
+    print_popularity_bias_movielens1m = True
 
-    cold_start = False
+    cold_start = True
 
     dataset_list = ["movielens1m_ours", "movielens1m_original", "hetrec", "amazon_instant_video"]
     dataset_cold_start_list = ["movielens1m_ours"]
@@ -262,44 +262,15 @@ if __name__ == '__main__':
 
 
     # mantain compatibility with latex parameteres function
-    if cold_start:
+    if cold_start and print_results:
         for n_cold_item in cold_start_items_list:
             print_parameters_latex_table(result_folder_path = "result_experiments/RecSys/",
                                               results_file_prefix_name = "SpectralCF_cold_{}".format(n_cold_item),
                                               experiment_subfolder_list = dataset_cold_start_list,
                                               other_algorithm_list = [SpectralCF_RecommenderWrapper])
-    else:
+    elif not cold_start and print_results:
         print_parameters_latex_table(result_folder_path = "result_experiments/RecSys/",
                                        results_file_prefix_name = "SpectralCF",
                                        experiment_subfolder_list = dataset_list,
                                        other_algorithm_list = [SpectralCF_RecommenderWrapper])
 
-
-
-
-    if print_popularity_bias_movielens1m:
-        from Utils.plot_popularity import plot_popularity_bias
-
-        dataset = Movielens1MReader(type="original")
-
-        URM_train_original = dataset.URM_train.copy()
-        URM_validation_original = dataset.URM_validation.copy()
-        URM_test_original = dataset.URM_test.copy()
-
-        dataset = Movielens1MReader(type="ours")
-        URM_train_ours = dataset.URM_train.copy()
-        URM_validation_ours = dataset.URM_validation.copy()
-        URM_test_ours = dataset.URM_test.copy()
-
-
-        plot_popularity_bias([URM_train_original, URM_train_ours],
-                             ["URM_train_original", "URM_train_ours"],
-                             "result_experiments/RecSys/SpectralCF_popularity_bias_train")
-
-        plot_popularity_bias([URM_validation_original, URM_validation_ours],
-                             ["URM_validation_original", "URM_validation_ours"],
-                             "result_experiments/RecSys/SpectralCF_popularity_bias_validation")
-
-        plot_popularity_bias([URM_test_original, URM_test_ours],
-                             ["URM_test_original", "URM_test_ours"],
-                             "result_experiments/RecSys/SpectralCF_popularity_bias_test")
