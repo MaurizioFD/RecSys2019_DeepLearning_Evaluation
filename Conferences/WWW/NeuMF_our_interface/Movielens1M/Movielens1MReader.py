@@ -3,7 +3,7 @@
 """
 Created on 14/09/17
 
-@author: Maurizio Ferrari Dacrema
+@author: Anonymous authors
 """
 
 import os, pickle
