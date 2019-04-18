@@ -3,34 +3,19 @@
 """
 Created on 22/11/17
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 
-from Base.NonPersonalizedRecommender import TopPop, Random
-from KNN.UserKNNCFRecommender import UserKNNCFRecommender
-from KNN.ItemKNNCFRecommender import ItemKNNCFRecommender
-from SLIM_BPR.Cython.SLIM_BPR_Cython import SLIM_BPR_Cython
-from SLIM_ElasticNet.SLIMElasticNetRecommender import SLIMElasticNetRecommender
-from SLIM_ElasticNet.Cython.SLIM_Structure_Cython import SLIM_Structure_Cython
-from GraphBased.P3alphaRecommender import P3alphaRecommender
-from GraphBased.RP3betaRecommender import RP3betaRecommender
-from SLIM_BPR.Cython.SLIM_BPR_Cython import SLIM_BPR_Cython
-from SLIM_ElasticNet.SLIMElasticNetRecommender import SLIMElasticNetRecommender
+from Recommender_import_list import *
+from Conferences.WWW.MultiVAE_our_interface.MultiVAE_RecommenderWrapper import MultiVAE_RecommenderWrapper
 
-
-from KNN.ItemKNNCBFRecommender import ItemKNNCBFRecommender
-from KNN.ItemKNN_CFCBF_Hybrid_Recommender import ItemKNN_CFCBF_Hybrid_Recommender
-
-from MatrixFactorization.Cython.MatrixFactorization_Cython import MatrixFactorization_BPR_Cython, MatrixFactorization_FunkSVD_Cython, MatrixFactorization_AsySVD_Cython
-from MatrixFactorization.PureSVDRecommender import PureSVDRecommender
-from MatrixFactorization.WRMFRecommender import WRMFRecommender
 
 from ParameterTuning.SearchSingleCase import SearchSingleCase
 from ParameterTuning.SearchAbstractClass import SearchInputRecommenderParameters
 
 from ParameterTuning.run_parameter_search import runParameterSearch_Collaborative
-# from Utils.print_results_latex_table import print_time_statistics_latex_table, print_results_latex_table, print_parameters_latex_table
+from Utils.print_results_latex_table import print_time_statistics_latex_table, print_results_latex_table, print_parameters_latex_table
 
 
 from functools import partial
@@ -38,9 +23,7 @@ import traceback, os, multiprocessing
 import numpy as np
 
 from Conferences.WWW.MultiVAE_our_interface.EvaluatorUserSubsetWrapper import EvaluatorUserSubsetWrapper
-# from Conferences.WWW.MultiVAE_our_interface.MultiVAE_RecommenderWrapper import MultiVAE_RecommenderWrapper
-
-
+from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
 
 
 
@@ -73,22 +56,11 @@ def read_data_split_and_search_MultiVAE(dataset_name):
 
 
         collaborative_algorithm_list = [
-            # Random,
-            # TopPop,
-            # # Non applicabile, new users - UserKNNCFRecommender,
-            # ItemKNNCFRecommender,
-            # P3alphaRecommender,
-            # RP3betaRecommender,
-            SLIM_BPR_Cython,
-            SLIMElasticNetRecommender,
-            # Non applicabile, new users - MatrixFactorization_BPR_Cython,
-            # Non applicabile, new users - MatrixFactorization_FunkSVD_Cython,
-            # Non applicabile, new users - PureSVDRecommender,
-            MatrixFactorization_AsySVD_Cython,
-            MatrixFactorization_BPR_Cython,
-            MatrixFactorization_FunkSVD_Cython,
-            PureSVDRecommender,
-            WRMFRecommender
+           Random,
+            TopPop,
+            ItemKNNCFRecommender,
+            P3alphaRecommender,
+            RP3betaRecommender,
         ]
 
         URM_train = dataset.URM_train.copy()
@@ -99,8 +71,6 @@ def read_data_split_and_search_MultiVAE(dataset_name):
 
 
         # Ensure IMPLICIT data and DISJOINT sets
-        from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
-
         assert_implicit_data([URM_train, URM_train_all, URM_validation, URM_test])
         assert_disjoint_matrices([URM_train, URM_validation, URM_test])
         assert_disjoint_matrices([URM_train_all, URM_validation, URM_test])
@@ -113,64 +83,6 @@ def read_data_split_and_search_MultiVAE(dataset_name):
 
         evaluator_validation = EvaluatorUserSubsetWrapper(evaluator_validation, URM_train_all)
         evaluator_test = EvaluatorUserSubsetWrapper(evaluator_test, URM_train_all)
-
-
-
-
-    elif split_type == "warm_user":
-
-
-
-        collaborative_algorithm_list = [
-            #Random,
-            TopPop,
-            #UserKNNCFRecommender,
-            #ItemKNNCFRecommender,
-            #P3alphaRecommender,
-            #RP3betaRecommender,
-            #SLIM_BPR_Cython,
-            # SLIMElasticNetRecommender,
-            # MatrixFactorization_BPR_Cython,
-            # MatrixFactorization_FunkSVD_Cython,
-            #PureSVDRecommender,
-        ]
-
-
-        URM_train = dataset.URM_train.copy()
-        URM_validation = dataset.URM_validation.copy()
-        URM_test = dataset.URM_test.copy()
-
-        # Ensure IMPLICIT data
-        from Utils.assertions_on_data_for_experiments import assert_implicit_data
-
-        assert_implicit_data([URM_train, URM_validation, URM_test])
-
-
-        from Base.Evaluation.Evaluator import EvaluatorHoldout
-
-        evaluator_validation = EvaluatorHoldout(URM_validation, cutoff_list=[100])
-        evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[20, 50, 100])
-
-
-
-    else:
-
-        assert False, "split_type not recognized"
-
-
-
-
-
-
-    # from Utils.plot_popularity import plot_popularity_bias, save_popularity_statistics
-    #
-    # plot_popularity_bias([URM_train + URM_validation, URM_test],
-    #                      ["URM_train", "URM_test"],
-    #                      output_folder_path + "_plot_popularity_bias")
-    #
-    # save_popularity_statistics([URM_train + URM_validation, URM_test],
-    #                            ["URM_train", "URM_test"],
-    #                            output_folder_path + "_latex_popularity_statistics")
 
 
 
@@ -190,23 +102,23 @@ def read_data_split_and_search_MultiVAE(dataset_name):
 
 
 
-    pool = multiprocessing.Pool(processes=int(multiprocessing.cpu_count()), maxtasksperchild=1)
-    pool.map(runParameterSearch_Collaborative_partial, collaborative_algorithm_list)
+    # pool = multiprocessing.Pool(processes=int(multiprocessing.cpu_count()), maxtasksperchild=1)
+    # pool.map(runParameterSearch_Collaborative_partial, collaborative_algorithm_list)
+    #
+    # pool.close()
+    # pool.join()
 
-    pool.close()
-    pool.join()
 
-    #
-    # for recommender_class in collaborative_algorithm_list:
-    #
-    #     try:
-    #
-    #         runParameterSearch_Collaborative_partial(recommender_class)
-    #
-    #     except Exception as e:
-    #
-    #         print("On recommender {} Exception {}".format(recommender_class, str(e)))
-    #         traceback.print_exc()
+    for recommender_class in collaborative_algorithm_list:
+
+        try:
+
+            runParameterSearch_Collaborative_partial(recommender_class)
+
+        except Exception as e:
+
+            print("On recommender {} Exception {}".format(recommender_class, str(e)))
+            traceback.print_exc()
 
 
 
@@ -251,10 +163,10 @@ def read_data_split_and_search_MultiVAE(dataset_name):
                                             CONSTRUCTOR_POSITIONAL_ARGS = [URM_train],
                                             FIT_KEYWORD_ARGS = multiVAE_earlystopping_parameters)
 
-        # parameterSearch.search(recommender_parameters,
-        #                        fit_parameters_values=multiVAE_article_parameters,
-        #                        output_folder_path = output_folder_path,
-        #                        output_file_name_root = MultiVAE_RecommenderWrapper.RECOMMENDER_NAME)
+        parameterSearch.search(recommender_parameters,
+                               fit_parameters_values=multiVAE_article_parameters,
+                               output_folder_path = output_folder_path,
+                               output_file_name_root = MultiVAE_RecommenderWrapper.RECOMMENDER_NAME)
 
 
 
@@ -286,16 +198,6 @@ def read_data_split_and_search_MultiVAE(dataset_name):
                               other_algorithm_list = [MultiVAE_RecommenderWrapper])
 
 
-    print_results_latex_table(result_folder_path = output_folder_path,
-                              results_file_prefix_name = ALGORITHM_NAME + "_all_metrics",
-                              dataset_name = dataset_name,
-                              metrics_to_report_list = ["PRECISION", "RECALL", "MAP", "MRR", "NDCG", "F1", "HIT_RATE", "ARHR", "NOVELTY", "DIVERSITY_MEAN_INTER_LIST", "DIVERSITY_HERFINDAHL", "COVERAGE_ITEM", "DIVERSITY_GINI", "SHANNON_ENTROPY"],
-                              cutoffs_to_report_list = [50],
-                              other_algorithm_list = [MultiVAE_RecommenderWrapper])
-
-
-
-
 
 from functools import partial
 
@@ -306,12 +208,11 @@ from functools import partial
 
 if __name__ == '__main__':
 
-    ALGORITHM_NAME = "MultiVAE"
+    ALGORITHM_NAME = "Mult_VAE"
     CONFERENCE_NAME = "WWW"
 
 
     dataset_list = ["movielens20m", "netflixPrize"]
-    dataset_list = ["netflixPrize"]
 
 
     for dataset in dataset_list:

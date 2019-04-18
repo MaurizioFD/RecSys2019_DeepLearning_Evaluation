@@ -29,7 +29,7 @@ class EvaluatorUserSubsetWrapper(object):
 
         URM_train_original = recommender_object.URM_train.copy()
 
-        recommender_object.set_URM_train(self.URM_validation_train, estimate_item_similarity_for_cold_users=True, topK = 300)
+        recommender_object.set_URM_train(self.URM_validation_train, estimate_model_for_cold_users = "mean_item_factors", topK = 300)
 
         results_dict, n_users_evaluated = self.evaluator_object.evaluateRecommender(recommender_object)
 

@@ -352,6 +352,56 @@ class Novelty(Metrics_Object):
 
 
 
+class AveragePopularity(Metrics_Object):
+    """
+    Average popularity the recommended items have in the train data.
+    The popularity is normalized by setting as 1 the item with the highest popularity in the train data
+    """
+
+    def __init__(self, URM_train):
+        super(AveragePopularity, self).__init__()
+
+        URM_train = sps.csc_matrix(URM_train)
+        URM_train.eliminate_zeros()
+        item_popularity = np.ediff1d(URM_train.indptr)
+
+
+        self.cumulative_popularity = 0.0
+        self.n_evaluated_users = 0
+        self.n_items = URM_train.shape[0]
+        self.n_interactions = item_popularity.sum()
+
+        self.item_popularity_normalized = item_popularity/item_popularity.max()
+
+
+    def add_recommendations(self, recommended_items_ids):
+
+        self.n_evaluated_users += 1
+
+        if len(recommended_items_ids)>0:
+            recommended_items_popularity = self.item_popularity_normalized[recommended_items_ids]
+
+            self.cumulative_popularity += np.sum(recommended_items_popularity)/len(recommended_items_ids)
+
+
+    def get_metric_value(self):
+
+        if self.n_evaluated_users == 0:
+            return 0.0
+
+        return self.cumulative_popularity/self.n_evaluated_users
+
+    def merge_with_other(self, other_metric_object):
+        assert other_metric_object is Novelty, "AveragePopularity: attempting to merge with a metric object of different type"
+
+        self.cumulative_popularity = self.cumulative_popularity + other_metric_object.cumulative_popularity
+        self.n_evaluated_users = self.n_evaluated_users + other_metric_object.n_evaluated_users
+
+
+
+
+
+
 class Diversity_similarity(Metrics_Object):
     """
     Intra list diversity computes the diversity of items appearing in the recommendations received by each single user, by using an item_diversity_matrix.

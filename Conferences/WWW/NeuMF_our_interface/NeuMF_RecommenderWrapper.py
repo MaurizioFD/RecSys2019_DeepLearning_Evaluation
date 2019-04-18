@@ -3,7 +3,7 @@
 """
 Created on 18/12/18
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 
@@ -195,13 +195,13 @@ def deep_clone_model(source_model):
 
 
 
-class NeuCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopping):
+class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopping):
 
 
-    RECOMMENDER_NAME = "NeuCF_RecommenderWrapper"
+    RECOMMENDER_NAME = "NeuMF_RecommenderWrapper"
 
     def __init__(self, URM_train):
-        super(NeuCF_RecommenderWrapper, self).__init__(URM_train)
+        super(NeuMF_RecommenderWrapper, self).__init__(URM_train)
 
         self._train = sps.dok_matrix(self.URM_train)
         self.n_users, self.n_items = self.URM_train.shape
@@ -295,15 +295,15 @@ class NeuCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
         if self.pretrain:
 
             if root_folder_pretrain is not None:
-                print("NeuCF_RecommenderWrapper: pretrained models will be saved in '{}'".format(root_folder_pretrain))
+                print("NeuMF_RecommenderWrapper: pretrained models will be saved in '{}'".format(root_folder_pretrain))
 
                 # If directory does not exist, create
                 if not os.path.exists(root_folder_pretrain):
                     os.makedirs(root_folder_pretrain)
 
-            print("NeuCF_RecommenderWrapper: root_folder_pretrain not provided, pretrained models will not be saved")
+            print("NeuMF_RecommenderWrapper: root_folder_pretrain not provided, pretrained models will not be saved")
 
-            print("NeuCF_RecommenderWrapper: Pretraining GMF...")
+            print("NeuMF_RecommenderWrapper: Pretraining GMF...")
 
             self.model = GMF_get_model(self.n_users, self.n_items, self.mf_dim)
             self.model = set_learner(self.model, learning_rate, learner)
@@ -324,7 +324,7 @@ class NeuCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
 
 
 
-            print("NeuCF_RecommenderWrapper: Pretraining MLP...")
+            print("NeuMF_RecommenderWrapper: Pretraining MLP...")
 
             self.model = MLP_get_model(self.n_users, self.n_items, self.layers, self.reg_layers)
             self.model = set_learner(self.model, learning_rate, learner)
@@ -355,10 +355,10 @@ class NeuCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
         # Load pretrain model
         if pretrain:
             self.model = load_pretrain_model(self.model, self.gmf_model, self.mlp_model, len(layers))
-            print("NeuCF_RecommenderWrapper: Load pretrained GMF and MLP models.")
+            print("NeuMF_RecommenderWrapper: Load pretrained GMF and MLP models.")
 
 
-        print("NeuCF_RecommenderWrapper: Training NeuCF...")
+        print("NeuMF_RecommenderWrapper: Training NeuCF...")
 
         self._best_model = deep_clone_model(self.model)
 
@@ -367,7 +367,7 @@ class NeuCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
                                         **earlystopping_kwargs)
 
 
-        print("NeuCF_RecommenderWrapper: Tranining complete")
+        print("NeuMF_RecommenderWrapper: Tranining complete")
 
         self.model = deep_clone_model(self._best_model)
 
@@ -393,7 +393,7 @@ class NeuCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
                          np.array(labels), # labels
                          batch_size=self.batch_size, epochs=1, verbose=0, shuffle=True)
 
-        print("NeuCF_RecommenderWrapper: Epoch {}, loss {:.2E}".format(currentEpoch+1, hist.history['loss'][0]))
+        print("NeuMF_RecommenderWrapper: Epoch {}, loss {:.2E}".format(currentEpoch+1, hist.history['loss'][0]))
 
 
 

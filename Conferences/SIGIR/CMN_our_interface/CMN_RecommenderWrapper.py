@@ -200,7 +200,7 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
             item_score_user = self.sess.run(score_op, feed)
 
             if items_to_compute is not None:
-                item_scores[user_index, item_indices] = item_score_user.ravel()[item_indices]
+                item_scores[user_index, item_indices] = item_score_user.ravel()
             else:
                 item_scores[user_index, :] = item_score_user.ravel()
 

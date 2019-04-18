@@ -67,7 +67,7 @@ class SearchSingleCase(SearchBayesianSkopt):
 
         writeLog("{}: Search complete. Best config is {}: {}\n".format(self.ALGORITHM_NAME,
                                                                        self.best_solution_counter,
-                                                                       self.best_solution_parameters), self.log_file)
+                                                                       fit_parameters_values), self.log_file)
 
 
 

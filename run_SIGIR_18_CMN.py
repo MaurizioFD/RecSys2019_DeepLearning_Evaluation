@@ -6,13 +6,9 @@ Created on 22/11/17
 @author: Anonymous authors
 """
 
-from Base.NonPersonalizedRecommender import TopPop, Random
-from KNN.UserKNNCFRecommender import UserKNNCFRecommender
-from KNN.ItemKNNCFRecommender import ItemKNNCFRecommender
-from GraphBased.P3alphaRecommender import P3alphaRecommender
-from GraphBased.RP3betaRecommender import RP3betaRecommender
-from MatrixFactorization.PureSVDRecommender import PureSVDRecommender
-from MatrixFactorization.WRMFRecommender import WRMFRecommender
+from Recommender_import_list import *
+from Conferences.SIGIR.CMN_our_interface.CMN_RecommenderWrapper import CMN_RecommenderWrapper
+
 
 from ParameterTuning.run_parameter_search import runParameterSearch_Collaborative
 
@@ -20,12 +16,13 @@ import traceback, os, multiprocessing, pickle
 from functools import partial
 import numpy as np
 
-from Conferences.SIGIR.CMN_our_interface.CMN_RecommenderWrapper import CMN_RecommenderWrapper
+
 from ParameterTuning.SearchSingleCase import SearchSingleCase
 from ParameterTuning.SearchAbstractClass import SearchInputRecommenderParameters
 
 from Utils.print_results_latex_table import print_time_statistics_latex_table, print_results_latex_table, print_parameters_latex_table
-
+from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
+from Utils.plot_popularity import plot_popularity_bias, save_popularity_statistics
 
 
 def read_data_split_and_search_CMN(dataset_name):
@@ -62,24 +59,16 @@ def read_data_split_and_search_CMN(dataset_name):
     collaborative_algorithm_list = [
         Random,
         TopPop,
-        # UserKNNCFRecommender,
-        # ItemKNNCFRecommender,
-        # P3alphaRecommender,
-        # RP3betaRecommender,
-        # # SLIM_BPR_Cython,
-        # # SLIMElasticNetRecommender,
-        # # MatrixFactorization_BPR_Cython,
-        # # MatrixFactorization_FunkSVD_Cython,
-        # PureSVDRecommender,
-        WRMFRecommender,
+        UserKNNCFRecommender,
+        ItemKNNCFRecommender,
+        P3alphaRecommender,
+        RP3betaRecommender,
     ]
 
     metric_to_optimize = "HIT_RATE"
 
 
     # Ensure IMPLICIT data and DISJOINT sets
-    from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
-
     assert_implicit_data([URM_train, URM_validation, URM_test, URM_test_negative])
 
 
@@ -96,16 +85,15 @@ def read_data_split_and_search_CMN(dataset_name):
 
 
 
-    from Utils.plot_popularity import plot_popularity_bias, save_popularity_statistics
+    algorithm_dataset_string = "{}_{}_".format(ALGORITHM_NAME, dataset_name)
 
     plot_popularity_bias([URM_train + URM_validation, URM_test],
-                         ["URM_train", "URM_test"],
-                         output_folder_path + "_plot_popularity_bias")
+                         ["URM train", "URM test"],
+                         output_folder_path + algorithm_dataset_string + "popularity_plot")
 
     save_popularity_statistics([URM_train + URM_validation, URM_test],
-                               ["URM_train", "URM_test"],
-                               output_folder_path + "_latex_popularity_statistics")
-
+                               ["URM train", "URM test"],
+                               output_folder_path + algorithm_dataset_string + "popularity_statistics")
 
 
 
@@ -137,16 +125,16 @@ def read_data_split_and_search_CMN(dataset_name):
     # pool.join()
 
 
-    # for recommender_class in collaborative_algorithm_list:
-    #
-    #     try:
-    #
-    #         runParameterSearch_Collaborative_partial(recommender_class)
-    #
-    #     except Exception as e:
-    #
-    #         print("On recommender {} Exception {}".format(recommender_class, str(e)))
-    #         traceback.print_exc()
+    for recommender_class in collaborative_algorithm_list:
+
+        try:
+
+            runParameterSearch_Collaborative_partial(recommender_class)
+
+        except Exception as e:
+
+            print("On recommender {} Exception {}".format(recommender_class, str(e)))
+            traceback.print_exc()
 
 
 
@@ -171,7 +159,7 @@ def read_data_split_and_search_CMN(dataset_name):
             "pretrain": True,
             "learning_rate": 1e-3,
             "verbose": False,
-            "temp_file_folder": temp_file_folder,
+            "temp_file_folder": temp_file_folder
         }
 
         if dataset_name == "citeulike":
@@ -205,10 +193,10 @@ def read_data_split_and_search_CMN(dataset_name):
                                             CONSTRUCTOR_POSITIONAL_ARGS = [URM_train],
                                             FIT_KEYWORD_ARGS = CMN_earlystopping_parameters)
 
-        # parameterSearch.search(recommender_parameters,
-        #                        fit_parameters_values=CMN_article_parameters,
-        #                        output_folder_path = output_folder_path,
-        #                        output_file_name_root = CMN_RecommenderWrapper.RECOMMENDER_NAME)
+        parameterSearch.search(recommender_parameters,
+                               fit_parameters_values=CMN_article_parameters,
+                               output_folder_path = output_folder_path,
+                               output_file_name_root = CMN_RecommenderWrapper.RECOMMENDER_NAME)
 
 
 
@@ -243,18 +231,6 @@ def read_data_split_and_search_CMN(dataset_name):
                               cutoffs_to_report_list = [5, 10],
                               ICM_names_to_report_list = [],
                               other_algorithm_list = [CMN_RecommenderWrapper])
-
-
-
-    print_results_latex_table(result_folder_path = output_folder_path,
-                              results_file_prefix_name = ALGORITHM_NAME + "_all_metrics",
-                              dataset_name = dataset_name,
-                              metrics_to_report_list = ["PRECISION", "RECALL", "MAP", "MRR", "NDCG", "F1", "HIT_RATE", "ARHR", "NOVELTY", "DIVERSITY_MEAN_INTER_LIST", "DIVERSITY_HERFINDAHL", "COVERAGE_ITEM", "DIVERSITY_GINI", "SHANNON_ENTROPY"],
-                              cutoffs_to_report_list = [10],
-                              ICM_names_to_report_list = [],
-                              other_algorithm_list = [CMN_RecommenderWrapper])
-
-
 
 
 

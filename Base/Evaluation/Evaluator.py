@@ -14,7 +14,7 @@ from enum import Enum
 from Utils.seconds_to_biggest_unit import seconds_to_biggest_unit
 
 from Base.Evaluation.metrics import roc_auc, precision, precision_recall_min_denominator, recall, MAP, MRR, ndcg, arhr, rmse, \
-    Novelty, Coverage_Item, Metrics_Object, Coverage_User, Gini_Diversity, Shannon_Entropy, Diversity_MeanInterList, Diversity_Herfindahl
+    Novelty, Coverage_Item, Metrics_Object, Coverage_User, Gini_Diversity, Shannon_Entropy, Diversity_MeanInterList, Diversity_Herfindahl, AveragePopularity
 
 
 class EvaluatorMetrics(Enum):
@@ -31,6 +31,7 @@ class EvaluatorMetrics(Enum):
     ARHR = "ARHR"
     RMSE = "RMSE"
     NOVELTY = "NOVELTY"
+    AVERAGE_POPULARITY = "AVERAGE_POPULARITY"
     DIVERSITY_SIMILARITY = "DIVERSITY_SIMILARITY"
     DIVERSITY_MEAN_INTER_LIST = "DIVERSITY_MEAN_INTER_LIST"
     DIVERSITY_HERFINDAHL = "DIVERSITY_HERFINDAHL"
@@ -69,6 +70,9 @@ def create_empty_metrics_dict(n_items, n_users, URM_train, ignore_items, ignore_
 
         elif metric == EvaluatorMetrics.NOVELTY:
             empty_dict[metric.value] = Novelty(URM_train)
+
+        elif metric == EvaluatorMetrics.AVERAGE_POPULARITY:
+            empty_dict[metric.value] = AveragePopularity(URM_train)
 
         elif metric == EvaluatorMetrics.MAP:
             empty_dict[metric.value] = MAP()
@@ -319,6 +323,7 @@ class EvaluatorHoldout(Evaluator):
                     results_current_cutoff[EvaluatorMetrics.MRR.value].add_recommendations(is_relevant_current_cutoff)
                     results_current_cutoff[EvaluatorMetrics.MAP.value].add_recommendations(is_relevant_current_cutoff, relevant_items)
                     results_current_cutoff[EvaluatorMetrics.NOVELTY.value].add_recommendations(recommended_items_current_cutoff)
+                    results_current_cutoff[EvaluatorMetrics.AVERAGE_POPULARITY.value].add_recommendations(recommended_items_current_cutoff)
                     results_current_cutoff[EvaluatorMetrics.DIVERSITY_GINI.value].add_recommendations(recommended_items_current_cutoff)
                     results_current_cutoff[EvaluatorMetrics.SHANNON_ENTROPY.value].add_recommendations(recommended_items_current_cutoff)
                     results_current_cutoff[EvaluatorMetrics.COVERAGE_ITEM.value].add_recommendations(recommended_items_current_cutoff)
@@ -547,6 +552,7 @@ class EvaluatorNegativeItemSample(Evaluator):
                 results_current_cutoff[EvaluatorMetrics.MRR.value].add_recommendations(is_relevant_current_cutoff)
                 results_current_cutoff[EvaluatorMetrics.MAP.value].add_recommendations(is_relevant_current_cutoff, relevant_items)
                 results_current_cutoff[EvaluatorMetrics.NOVELTY.value].add_recommendations(recommended_items_current_cutoff)
+                results_current_cutoff[EvaluatorMetrics.AVERAGE_POPULARITY.value].add_recommendations(recommended_items_current_cutoff)
                 results_current_cutoff[EvaluatorMetrics.DIVERSITY_GINI.value].add_recommendations(recommended_items_current_cutoff)
                 results_current_cutoff[EvaluatorMetrics.SHANNON_ENTROPY.value].add_recommendations(recommended_items_current_cutoff)
                 results_current_cutoff[EvaluatorMetrics.COVERAGE_ITEM.value].add_recommendations(recommended_items_current_cutoff)

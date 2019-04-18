@@ -6,7 +6,7 @@ Created on 14/12/18
 @author: Anonymous authors
 """
 
-import pickle, time, os
+import pickle, time, os, traceback
 import numpy as np
 
 from skopt import gp_minimize
@@ -20,6 +20,9 @@ from Base.Incremental_Training_Early_Stopping import Incremental_Training_Early_
 class SearchBayesianSkopt(SearchAbstractClass):
 
     ALGORITHM_NAME = "SearchBayesianSkopt"
+
+    # Value to be assigned to invalid configuration or if an Exception is raised
+    INVALID_CONFIG_VALUE = np.finfo(np.float16).max
 
 
     def __init__(self, recommender_class, evaluator_validation = None, evaluator_test = None):
@@ -345,6 +348,12 @@ class SearchBayesianSkopt(SearchAbstractClass):
                             open(self.output_folder_path + self.output_file_name_root + "_metadata", "wb"),
                             protocol=pickle.HIGHEST_PROTOCOL)
 
+
+            if current_result >= self.INVALID_CONFIG_VALUE:
+                writeLog("{}: WARNING! Config {} returned a value equal or worse than the default value to be assigned to invalid configurations."
+                         " If no better valid configuration is found, this parameter search may produce an invalid result.\n", self.log_file)
+
+
         except Exception as exc:
 
             writeLog("{}: Config {} Exception. Config: {} - Exception: {}\n".format(self.ALGORITHM_NAME,
@@ -354,7 +363,9 @@ class SearchBayesianSkopt(SearchAbstractClass):
 
             # Assign to this configuration the worst possible score
             # Being a minimization problem, set it to the max value of a float
-            current_result = + np.finfo(np.float16).max
+            current_result = + self.INVALID_CONFIG_VALUE
+
+            traceback.print_exc()
 
 
         self.model_counter += 1

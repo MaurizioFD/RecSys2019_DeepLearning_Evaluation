@@ -8,6 +8,7 @@ Created on 18/02/19
 
 import matplotlib
 # matplotlib.use('TkAgg')
+matplotlib.use("pgf")
 import matplotlib.pyplot as plt
 
 import itertools
@@ -38,8 +39,8 @@ def plot_popularity_bias(URM_object_list, URM_name_list, output_img_path, sort_o
 
 
     plt.xlabel('Items')
-    plt.ylabel("Interactions")
-    plt.title("Popularity bias for different urm splits")
+    plt.ylabel("Normalized interactions")
+    plt.title("Item popularity distribution for different URM splits")
 
     x_tick = np.arange(0,n_items, dtype=np.int)
 
@@ -87,7 +88,11 @@ def plot_popularity_bias(URM_object_list, URM_name_list, output_img_path, sort_o
     # fig.patch.set_facecolor('white')
     # plt.rcParams['figure.facecolor'] = 'white'
 
-    plt.savefig(output_img_path)
+    plt.savefig(output_img_path + ".png", dpi = 1200)
+
+    plt.savefig(output_img_path + ".pdf", dpi = 1200)
+
+    plt.savefig(output_img_path + ".pgf")
 
     plt.close()
 
@@ -111,6 +116,19 @@ def Gini_Index(x):
     g = 0.5 * rmad
     return g
 
+def gini(array):
+    """Calculate the Gini coefficient of a numpy array."""
+    # based on bottom eq: http://www.statsdirect.com/help/content/image/stat0206_wmf.gif
+    # from: http://www.statsdirect.com/help/default.htm#nonparametric_methods/gini.htm
+    array = np.array(array, dtype=np.float)
+    array = array.flatten() #all values are treated equally, arrays must be 1d
+    if np.amin(array) < 0:
+        array -= np.amin(array) #values cannot be negative
+    array += 0.0000001 #values cannot be 0
+    array = np.sort(array) #values must be sorted
+    index = np.arange(1,array.shape[0]+1) #index per array element
+    n = array.shape[0]#number of array elements
+    return ((np.sum((2 * index - n  - 1) * array)) / (n * np.sum(array))) #Gini coefficient
 
 
 def save_popularity_statistics(URM_object_list, URM_name_list, output_file_path):
@@ -142,8 +160,7 @@ def save_popularity_statistics(URM_object_list, URM_name_list, output_file_path)
         min_pop = item_popularity.min()
         avg_pop = item_popularity.mean()
 
-        gini_index = Gini_Index(item_popularity)
-
+        gini_index = gini(item_popularity)
 
         if base_item_popularity is None:
             base_item_popularity = item_popularity.copy()

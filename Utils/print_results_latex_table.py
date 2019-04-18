@@ -3,20 +3,10 @@
 """
 Created on 22/11/17
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
-from Base.NonPersonalizedRecommender import TopPop, Random
-from KNN.UserKNNCFRecommender import UserKNNCFRecommender
-from KNN.ItemKNNCFRecommender import ItemKNNCFRecommender
-from SLIM_BPR.Cython.SLIM_BPR_Cython import SLIM_BPR_Cython
-from SLIM_ElasticNet.SLIMElasticNetRecommender import SLIMElasticNetRecommender
-from GraphBased.P3alphaRecommender import P3alphaRecommender
-from GraphBased.RP3betaRecommender import RP3betaRecommender
-from KNN.ItemKNNCBFRecommender import ItemKNNCBFRecommender
-from KNN.ItemKNN_CFCBF_Hybrid_Recommender import ItemKNN_CFCBF_Hybrid_Recommender
-from MatrixFactorization.Cython.MatrixFactorization_Cython import MatrixFactorization_BPR_Cython, MatrixFactorization_FunkSVD_Cython, MatrixFactorization_AsySVD_Cython
-from MatrixFactorization.PureSVDRecommender import PureSVDRecommender
+from Recommender_import_list import *
 
 import re
 from Utils.seconds_to_biggest_unit import seconds_to_biggest_unit
@@ -356,10 +346,7 @@ def get_algorithm_data_to_print_list(KNN_similarity_to_report_list = list(["cosi
         ItemKNNCFRecommender,
         P3alphaRecommender,
         RP3betaRecommender,
-        # SLIM_BPR_Cython,
-        # SLIMElasticNetRecommender,
-        # MatrixFactorization_BPR_Cython,
-        # MatrixFactorization_FunkSVD_Cython,
+        SLIMElasticNetRecommender,
         PureSVDRecommender,
         ItemKNNCBFRecommender,
         ItemKNN_CFCBF_Hybrid_Recommender
@@ -521,7 +508,13 @@ def print_time_statistics_latex_table(result_folder_path, dataset_name, results_
 
             if result_dict is not None:
 
-                mean, stddev = mean_and_stdd_of_list(result_dict["train_time_list"])
+                data_list = result_dict["train_time_list"]
+                data_list = np.array(data_list)
+
+                data_list_not_none_mask = np.array([val is not None for val in data_list])
+                data_list = data_list[data_list_not_none_mask]
+
+                mean, stddev = mean_and_stdd_of_list(data_list)
 
                 if len(result_dict["train_time_list"]) > 1:
                     result_row_string+= "{:.{n_decimals}f} $\\pm$ {:.{n_decimals}f} [s]\t&".format(mean, stddev, n_decimals=n_decimals)

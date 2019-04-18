@@ -634,8 +634,6 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
 
         dataset = 'ml-100k'
 
-        print('num_negatives = ', num_negatives)
-
         t1 = time()
         dataset = Dataset('Conferences/KDD/MCRec_github/data/' + dataset)
         trainMatrix, testRatings, testNegatives = dataset.trainMatrix, dataset.testRatings, dataset.testNegatives
@@ -747,16 +745,16 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
                                                          self._user_item_map,
                                                          True)
         t = time()
-        print('[%.1f s] epoch %d train_steps %d' % (t - t1, currentEpoch, train_steps))
+        # print('[%.1f s] epoch %d train_steps %d' % (t - t1, currentEpoch, train_steps))
 
         #Training
-        print("MCRec_RecommenderWrapper: fit_generator")
+        # print("MCRec_RecommenderWrapper: fit_generator")
         hist = self.model.fit_generator(train_batches,
                                    train_steps,
                                    epochs = 1,
                                    verbose = 0)
 
-        print('MCRec_RecommenderWrapper: training time %.1f s' % (time() - t))
+        # print('MCRec_RecommenderWrapper: training time %.1f s' % (time() - t))
 
 
 

@@ -3,26 +3,28 @@
 """
 Created on 14/09/17
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 import os, pickle
 import scipy.sparse as sps
 
-from Conferences.WWW.NeuCF_github.Dataset import Dataset as Dataset_github
+from Conferences.WWW.NeuMF_github.Dataset import Dataset as Dataset_github
 
 from Data_manager.IncrementalSparseMatrix import IncrementalSparseMatrix
 from Data_manager.split_functions.split_train_validation import split_train_validation_leave_one_out_user_wise
 from Data_manager.load_and_save_data import save_data_dict, load_data_dict
 
-class PinterestICCVReader(object):
+
+class Movielens1MReader(object):
 
 
     def __init__(self):
 
-        super(PinterestICCVReader, self).__init__()
+        super(Movielens1MReader, self).__init__()
 
-        pre_splitted_path = "Data_manager_split_datasets/PinterestICCV/WWW/NeuCF_our_interface/"
+
+        pre_splitted_path = "Data_manager_split_datasets/Movielens1M/WWW/NeuMF_our_interface/"
 
         pre_splitted_filename = "splitted_data"
 
@@ -32,7 +34,7 @@ class PinterestICCVReader(object):
 
         try:
 
-            print("Dataset_Pinterest: Attempting to load pre-splitted data")
+            print("Dataset_Movielens1M: Attempting to load pre-splitted data")
 
             for attrib_name, attrib_object in load_data_dict(pre_splitted_path, pre_splitted_filename).items():
                  self.__setattr__(attrib_name, attrib_object)
@@ -40,12 +42,12 @@ class PinterestICCVReader(object):
 
         except FileNotFoundError:
 
-            print("Dataset_Pinterest: Pre-splitted data not found, building new one")
+            print("Dataset_Movielens1M: Pre-splitted data not found, building new one")
 
             # Ensure file is loaded as matrix
             Dataset_github.load_rating_file_as_list = Dataset_github.load_rating_file_as_matrix
 
-            dataset = Dataset_github("Conferences/WWW/NeuCF_github/Data/pinterest-20")
+            dataset = Dataset_github("Conferences/WWW/NeuMF_github/Data/ml-1m")
 
             self.URM_train_original, self.URM_test = dataset.trainMatrix, dataset.testRatings
 
@@ -91,8 +93,7 @@ class PinterestICCVReader(object):
 
             save_data_dict(data_dict, pre_splitted_path, pre_splitted_filename)
 
-
-        print("Dataset_Pinterest: Dataset loaded")
+        print("Dataset_Movielens1M: Dataset loaded")
 
         print("N_items {}, n_users {}".format(self.URM_train.shape[1], self.URM_train.shape[0]))
 

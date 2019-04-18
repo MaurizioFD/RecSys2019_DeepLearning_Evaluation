@@ -101,6 +101,9 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
         if len(user_id_array) < self.batch_size:
             user_batch = np.zeros((self.batch_size), dtype=np.int64)
             user_batch[0:len(user_id_array)] = user_id_array
+
+        elif len(user_id_array) < self.batch_size:
+            assert False, "not supported"
         else:
             user_batch = user_id_array
 

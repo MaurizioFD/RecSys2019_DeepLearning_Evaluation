@@ -97,7 +97,7 @@ class BaseMatrixFactorizationRecommender(BaseRecommender):
         return self._cold_user_mask
 
 
-    def set_URM_train(self, URM_train_new, estimate_item_similarity_for_cold_users = False, topK = 100, **kwargs):
+    def set_URM_train(self, URM_train_new, estimate_model_for_cold_users = False, topK = 100, **kwargs):
         """
 
         :param URM_train_new:
@@ -115,7 +115,7 @@ class BaseMatrixFactorizationRecommender(BaseRecommender):
         self.URM_train = check_matrix(URM_train_new.copy(), 'csr', dtype=np.float32)
         self.URM_train.eliminate_zeros()
 
-        if estimate_item_similarity_for_cold_users:
+        if estimate_model_for_cold_users == "itemKNN":
 
             print("{}: Estimating ItemKNN model from ITEM latent factors...".format(self.RECOMMENDER_NAME))
 
@@ -129,6 +129,27 @@ class BaseMatrixFactorizationRecommender(BaseRecommender):
 
             print("{}: Estimating ItemKNN model from ITEM latent factors... done!".format(self.RECOMMENDER_NAME))
 
+
+
+        elif estimate_model_for_cold_users == "mean_item_factors":
+
+            print("{}: Estimating USER latent factors from ITEM latent factors...".format(self.RECOMMENDER_NAME))
+
+            self._cold_user_mask = np.ediff1d(self.URM_train.indptr) == 0
+
+            profile_length = np.ediff1d(self.URM_train.indptr)
+            profile_length_sqrt = np.sqrt(profile_length)
+
+            self.USER_factors = self.URM_train.dot(self.ITEM_factors)
+
+            #Divide every row for the sqrt of the profile length
+            for user_index in range(self.n_users):
+
+                if profile_length_sqrt[user_index] > 0:
+
+                    self.USER_factors[user_index, :] /= profile_length_sqrt[user_index]
+
+            print("{}: Estimating USER latent factors from ITEM latent factors... done!".format(self.RECOMMENDER_NAME))
 
 
 

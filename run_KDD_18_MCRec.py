@@ -6,33 +6,24 @@ Created on 22/11/17
 @author: Anonymous authors
 """
 
-from Base.NonPersonalizedRecommender import TopPop, Random
-from KNN.UserKNNCFRecommender import UserKNNCFRecommender
-from KNN.ItemKNNCFRecommender import ItemKNNCFRecommender
-from GraphBased.P3alphaRecommender import P3alphaRecommender
-from GraphBased.RP3betaRecommender import RP3betaRecommender
+from Recommender_import_list import *
+from Conferences.KDD.MCRec_our_interface.MCRecRecommenderWrapper import MCRecML100k_RecommenderWrapper
 
-from KNN.ItemKNNCBFRecommender import ItemKNNCBFRecommender
-
-from MatrixFactorization.PureSVDRecommender import PureSVDRecommender
 from ParameterTuning.SearchSingleCase import SearchSingleCase
 from ParameterTuning.SearchAbstractClass import SearchInputRecommenderParameters
-
-from KNN.ItemKNN_CFCBF_Hybrid_Recommender import ItemKNN_CFCBF_Hybrid_Recommender
 
 from ParameterTuning.run_parameter_search import runParameterSearch_Collaborative, runParameterSearch_Content, runParameterSearch_Hybrid
 
 import os, traceback
 import numpy as np
 
-from Utils.print_results_latex_table import print_time_statistics_latex_table, print_results_latex_table, print_parameters_latex_table
-from Conferences.KDD.MCRec_our_interface.MCRecRecommenderWrapper import MCRecML100k_RecommenderWrapper
 
+from Utils.print_results_latex_table import print_time_statistics_latex_table, print_results_latex_table, print_parameters_latex_table
+from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
+from Utils.plot_popularity import plot_popularity_bias, save_popularity_statistics
 
 
 def read_data_split_and_search_MCRec(dataset_name):
-
-
 
     from Conferences.KDD.MCRec_our_interface.Movielens100K.Movielens100KReader import Movielens100KReader
     from Conferences.KDD.MCRec_our_interface.LastFM.LastFMReader import LastFMReader
@@ -49,9 +40,6 @@ def read_data_split_and_search_MCRec(dataset_name):
         dataset = LastFMReader()
 
 
-
-
-
     output_folder_path = "result_experiments/{}/{}_{}/".format(CONFERENCE_NAME, ALGORITHM_NAME, dataset_name)
 
 
@@ -62,8 +50,6 @@ def read_data_split_and_search_MCRec(dataset_name):
 
 
     # Ensure IMPLICIT data
-    from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
-
     assert_implicit_data([URM_train, URM_validation, URM_test, URM_test_negative])
     assert_disjoint_matrices([URM_train, URM_validation, URM_test, URM_test_negative])
 
@@ -72,15 +58,16 @@ def read_data_split_and_search_MCRec(dataset_name):
     if not os.path.exists(output_folder_path):
         os.makedirs(output_folder_path)
 
-    from Utils.plot_popularity import plot_popularity_bias, save_popularity_statistics
+
+    algorithm_dataset_string = "{}_{}_".format(ALGORITHM_NAME, dataset_name)
 
     plot_popularity_bias([URM_train + URM_validation, URM_test],
-                         ["URM_train", "URM_test"],
-                         output_folder_path + "plot_popularity_bias")
+                         ["URM train", "URM test"],
+                         output_folder_path + algorithm_dataset_string + "popularity_plot")
 
     save_popularity_statistics([URM_train + URM_validation, URM_test],
-                               ["URM_train", "URM_test"],
-                               output_folder_path + "latex_popularity_statistics")
+                               ["URM train", "URM test"],
+                               output_folder_path + algorithm_dataset_string + "popularity_statistics")
 
 
 
@@ -98,17 +85,13 @@ def read_data_split_and_search_MCRec(dataset_name):
 
 
     collaborative_algorithm_list = [
-        # Random,
-        # TopPop,
+        Random,
+        TopPop,
         UserKNNCFRecommender,
-        # ItemKNNCFRecommender,
-        # P3alphaRecommender,
-        # RP3betaRecommender,
-        #SLIM_BPR_Cython,
-        # SLIMElasticNetRecommender,
-        # MatrixFactorization_BPR_Cython,
-        # MatrixFactorization_FunkSVD_Cython,
-        # PureSVDRecommender,
+        ItemKNNCFRecommender,
+        P3alphaRecommender,
+        RP3betaRecommender,
+        PureSVDRecommender
     ]
 
     metric_to_optimize = "PRECISION"
@@ -137,17 +120,17 @@ def read_data_split_and_search_MCRec(dataset_name):
 
 
 
-    #
-    # for recommender_class in collaborative_algorithm_list:
-    #
-    #     try:
-    #
-    #         runParameterSearch_Collaborative_partial(recommender_class)
-    #
-    #     except Exception as e:
-    #
-    #         print("On recommender {} Exception {}".format(recommender_class, str(e)))
-    #         traceback.print_exc()
+
+    for recommender_class in collaborative_algorithm_list:
+
+        try:
+
+            runParameterSearch_Collaborative_partial(recommender_class)
+
+        except Exception as e:
+
+            print("On recommender {} Exception {}".format(recommender_class, str(e)))
+            traceback.print_exc()
 
 
     ################################################################################################
@@ -157,56 +140,56 @@ def read_data_split_and_search_MCRec(dataset_name):
 
     ICM_name_list = ICM_dictionary.keys()
 
-    #
-    # for ICM_name in ICM_name_list:
-    #
-    #     try:
-    #
-    #         ICM_object = ICM_dictionary[ICM_name]
-    #
-    #         runParameterSearch_Content(ItemKNNCBFRecommender,
-    #                                    URM_train = URM_train,
-    #                                    metric_to_optimize = metric_to_optimize,
-    #                                    evaluator_validation = evaluator_validation,
-    #                                    evaluator_test = evaluator_test,
-    #                                    output_folder_path = output_folder_path,
-    #                                    parallelizeKNN = False,
-    #                                    ICM_name = ICM_name,
-    #                                    ICM_object = ICM_object.copy(),
-    #                                    n_cases = 35)
-    #
-    #     except Exception as e:
-    #
-    #         print("On CBF recommender for ICM {} Exception {}".format(ICM_name, str(e)))
-    #         traceback.print_exc()
+
+    for ICM_name in ICM_name_list:
+
+        try:
+
+            ICM_object = ICM_dictionary[ICM_name]
+
+            runParameterSearch_Content(ItemKNNCBFRecommender,
+                                       URM_train = URM_train,
+                                       metric_to_optimize = metric_to_optimize,
+                                       evaluator_validation = evaluator_validation,
+                                       evaluator_test = evaluator_test,
+                                       output_folder_path = output_folder_path,
+                                       parallelizeKNN = False,
+                                       ICM_name = ICM_name,
+                                       ICM_object = ICM_object.copy(),
+                                       n_cases = 35)
+
+        except Exception as e:
+
+            print("On CBF recommender for ICM {} Exception {}".format(ICM_name, str(e)))
+            traceback.print_exc()
 
 
     ################################################################################################
     ###### Hybrid
 
-    # for ICM_name in ICM_name_list:
-    #
-    #     try:
-    #
-    #         ICM_object = ICM_dictionary[ICM_name]
-    #
-    #         runParameterSearch_Hybrid(ItemKNN_CFCBF_Hybrid_Recommender,
-    #                                    URM_train = URM_train,
-    #                                    metric_to_optimize = metric_to_optimize,
-    #                                    evaluator_validation = evaluator_validation,
-    #                                    evaluator_test = evaluator_test,
-    #                                    output_folder_path = output_folder_path,
-    #                                    parallelizeKNN = False,
-    #                                    ICM_name = ICM_name,
-    #                                    ICM_object = ICM_object,
-    #                                    allow_weighting = True,
-    #                                    n_cases = 35)
-    #
-    #
-    #     except Exception as e:
-    #
-    #         print("On recommender {} Exception {}".format(ItemKNN_CFCBF_Hybrid_Recommender, str(e)))
-    #         traceback.print_exc()
+    for ICM_name in ICM_name_list:
+
+        try:
+
+            ICM_object = ICM_dictionary[ICM_name]
+
+            runParameterSearch_Hybrid(ItemKNN_CFCBF_Hybrid_Recommender,
+                                       URM_train = URM_train,
+                                       metric_to_optimize = metric_to_optimize,
+                                       evaluator_validation = evaluator_validation,
+                                       evaluator_test = evaluator_test,
+                                       output_folder_path = output_folder_path,
+                                       parallelizeKNN = False,
+                                       ICM_name = ICM_name,
+                                       ICM_object = ICM_object,
+                                       allow_weighting = True,
+                                       n_cases = 35)
+
+
+        except Exception as e:
+
+            print("On recommender {} Exception {}".format(ItemKNN_CFCBF_Hybrid_Recommender, str(e)))
+            traceback.print_exc()
 
     ################################################################################################
     ###### MCRec
@@ -246,10 +229,10 @@ def read_data_split_and_search_MCRec(dataset_name):
                                             CONSTRUCTOR_POSITIONAL_ARGS = [URM_train],
                                             FIT_KEYWORD_ARGS = MCRec_earlystopping_parameters)
 
-        # parameterSearch.search(recommender_parameters,
-        #                        fit_parameters_values=MCRec_article_parameters,
-        #                        output_folder_path = output_folder_path,
-        #                        output_file_name_root = MCRecML100k_RecommenderWrapper.RECOMMENDER_NAME)
+        parameterSearch.search(recommender_parameters,
+                               fit_parameters_values=MCRec_article_parameters,
+                               output_folder_path = output_folder_path,
+                               output_file_name_root = MCRecML100k_RecommenderWrapper.RECOMMENDER_NAME)
 
 
 
@@ -277,16 +260,6 @@ def read_data_split_and_search_MCRec(dataset_name):
                               results_file_prefix_name = ALGORITHM_NAME,
                               dataset_name = dataset_name,
                               metrics_to_report_list = ["PRECISION", "RECALL", "NDCG"],
-                              cutoffs_to_report_list = [10],
-                              ICM_names_to_report_list = ICM_names_to_report_list,
-                              other_algorithm_list = [MCRecML100k_RecommenderWrapper])
-
-
-
-    print_results_latex_table(result_folder_path = output_folder_path,
-                              results_file_prefix_name = ALGORITHM_NAME + "_all_metrics",
-                              dataset_name = dataset_name,
-                              metrics_to_report_list = ["PRECISION", "RECALL", "MAP", "MRR", "NDCG", "F1", "HIT_RATE", "ARHR", "NOVELTY", "DIVERSITY_MEAN_INTER_LIST", "DIVERSITY_HERFINDAHL", "COVERAGE_ITEM", "DIVERSITY_GINI", "SHANNON_ENTROPY"],
                               cutoffs_to_report_list = [10],
                               ICM_names_to_report_list = ICM_names_to_report_list,
                               other_algorithm_list = [MCRecML100k_RecommenderWrapper])

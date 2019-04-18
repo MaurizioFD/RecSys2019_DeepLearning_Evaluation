@@ -3,15 +3,11 @@
 """
 Created on 22/11/17
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
-from Base.NonPersonalizedRecommender import TopPop, Random
-from KNN.UserKNNCFRecommender import UserKNNCFRecommender
-from KNN.ItemKNNCFRecommender import ItemKNNCFRecommender
-from GraphBased.P3alphaRecommender import P3alphaRecommender
-from GraphBased.RP3betaRecommender import RP3betaRecommender
-from MatrixFactorization.PureSVDRecommender import PureSVDRecommender
+from Recommender_import_list import *
+from Conferences.WWW.NeuMF_our_interface.NeuMF_RecommenderWrapper import NeuMF_RecommenderWrapper
 
 
 from ParameterTuning.run_parameter_search import runParameterSearch_Collaborative
@@ -23,9 +19,8 @@ from functools import partial
 import numpy as np
 
 from Utils.print_results_latex_table import print_time_statistics_latex_table, print_results_latex_table, print_parameters_latex_table
-
-
-from Conferences.WWW.NeuCF_our_interface.NeuCF_RecommenderWrapper import NeuCF_RecommenderWrapper
+from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
+from Utils.plot_popularity import plot_popularity_bias, save_popularity_statistics
 
 
 
@@ -34,8 +29,8 @@ from Conferences.WWW.NeuCF_our_interface.NeuCF_RecommenderWrapper import NeuCF_R
 def read_data_split_and_search_NeuCF(dataset_name):
 
 
-    from Conferences.WWW.NeuCF_our_interface.Movielens1M.Movielens1MReader import Movielens1MReader
-    from Conferences.WWW.NeuCF_our_interface.Pinterest.PinterestICCVReader import PinterestICCVReader
+    from Conferences.WWW.NeuMF_our_interface.Movielens1M.Movielens1MReader import Movielens1MReader
+    from Conferences.WWW.NeuMF_our_interface.Pinterest.PinterestICCVReader import PinterestICCVReader
 
     if dataset_name == "movielens1m":
         dataset = Movielens1MReader()
@@ -53,30 +48,28 @@ def read_data_split_and_search_NeuCF(dataset_name):
 
 
     # Ensure IMPLICIT data and DISJOINT sets
-    from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
-
     assert_implicit_data([URM_train, URM_validation, URM_test, URM_test_negative])
-
 
     assert_disjoint_matrices([URM_train, URM_validation, URM_test])
     assert_disjoint_matrices([URM_train, URM_validation, URM_test_negative])
 
-
-    from Utils.plot_popularity import plot_popularity_bias, save_popularity_statistics
-
-    plot_popularity_bias([URM_train + URM_validation, URM_test],
-                         ["URM_train", "URM_test"],
-                         output_folder_path + "_plot_popularity_bias")
-
-    save_popularity_statistics([URM_train + URM_validation, URM_test],
-                               ["URM_train", "URM_test"],
-                               output_folder_path + "_latex_popularity_statistics")
 
 
     # If directory does not exist, create
     if not os.path.exists(output_folder_path):
         os.makedirs(output_folder_path)
 
+
+
+    algorithm_dataset_string = "{}_{}_".format(ALGORITHM_NAME, dataset_name)
+
+    plot_popularity_bias([URM_train + URM_validation, URM_test],
+                         ["URM train", "URM test"],
+                         output_folder_path + algorithm_dataset_string + "popularity_plot")
+
+    save_popularity_statistics([URM_train + URM_validation, URM_test],
+                               ["URM train", "URM test"],
+                               output_folder_path + algorithm_dataset_string + "popularity_statistics")
 
 
 
@@ -87,10 +80,6 @@ def read_data_split_and_search_NeuCF(dataset_name):
         ItemKNNCFRecommender,
         P3alphaRecommender,
         RP3betaRecommender,
-        # SLIM_BPR_Cython,
-        # SLIMElasticNetRecommender,
-        # MatrixFactorization_BPR_Cython,
-        # MatrixFactorization_FunkSVD_Cython,
         PureSVDRecommender,
     ]
 
@@ -123,29 +112,29 @@ def read_data_split_and_search_NeuCF(dataset_name):
     #
     # pool.close()
     # pool.join()
-    #
-    #
-    # for recommender_class in collaborative_algorithm_list:
-    #
-    #     try:
-    #
-    #         runParameterSearch_Collaborative_partial(recommender_class)
-    #
-    #     except Exception as e:
-    #
-    #         print("On recommender {} Exception {}".format(recommender_class, str(e)))
-    #         traceback.print_exc()
-    #
+
+
+    for recommender_class in collaborative_algorithm_list:
+
+        try:
+
+            runParameterSearch_Collaborative_partial(recommender_class)
+
+        except Exception as e:
+
+            print("On recommender {} Exception {}".format(recommender_class, str(e)))
+            traceback.print_exc()
+
 
 
     ################################################################################################
-    ###### NeuCF
+    ###### NeuMF
 
 
 
     try:
 
-        neuCF_article_parameters = {
+        neuMF_article_parameters = {
             "epochs": 100,
             "epochs_gmf": 100,
             "epochs_mlp": 100,
@@ -160,7 +149,7 @@ def read_data_split_and_search_NeuCF(dataset_name):
             "pretrain": True
         }
 
-        neuCF_earlystopping_parameters = {
+        neuMF_earlystopping_parameters = {
             "validation_every_n": 5,
             "stop_on_validation": True,
             "evaluator_object": evaluator_validation,
@@ -170,24 +159,24 @@ def read_data_split_and_search_NeuCF(dataset_name):
 
 
 
-        parameterSearch = SearchSingleCase(NeuCF_RecommenderWrapper,
+        parameterSearch = SearchSingleCase(NeuMF_RecommenderWrapper,
                                            evaluator_validation=evaluator_validation,
                                            evaluator_test=evaluator_test)
 
         recommender_parameters = SearchInputRecommenderParameters(
                                             CONSTRUCTOR_POSITIONAL_ARGS = [URM_train],
-                                            FIT_KEYWORD_ARGS = neuCF_earlystopping_parameters)
+                                            FIT_KEYWORD_ARGS = neuMF_earlystopping_parameters)
 
-        # parameterSearch.search(recommender_parameters,
-        #                        fit_parameters_values=neuCF_article_parameters,
-        #                        output_folder_path = output_folder_path,
-        #                        output_file_name_root = NeuCF_RecommenderWrapper.RECOMMENDER_NAME)
+        parameterSearch.search(recommender_parameters,
+                               fit_parameters_values=neuMF_article_parameters,
+                               output_folder_path = output_folder_path,
+                               output_file_name_root = NeuMF_RecommenderWrapper.RECOMMENDER_NAME)
 
 
 
     except Exception as e:
 
-        print("On recommender {} Exception {}".format(NeuCF_RecommenderWrapper, str(e)))
+        print("On recommender {} Exception {}".format(NeuMF_RecommenderWrapper, str(e)))
         traceback.print_exc()
 
 
@@ -206,7 +195,7 @@ def read_data_split_and_search_NeuCF(dataset_name):
     print_time_statistics_latex_table(result_folder_path = output_folder_path,
                                       dataset_name = dataset_name,
                                       results_file_prefix_name = ALGORITHM_NAME,
-                                      other_algorithm_list = [NeuCF_RecommenderWrapper],
+                                      other_algorithm_list = [NeuMF_RecommenderWrapper],
                                       n_validation_users = n_validation_users,
                                       n_test_users = n_test_users,
                                       n_decimals = 2)
@@ -217,22 +206,12 @@ def read_data_split_and_search_NeuCF(dataset_name):
                               dataset_name = dataset_name,
                               metrics_to_report_list = ["HIT_RATE", "NDCG"],
                               cutoffs_to_report_list = [1, 5, 10],
-                              other_algorithm_list = [NeuCF_RecommenderWrapper])
-
-
-
-    print_results_latex_table(result_folder_path = output_folder_path,
-                              results_file_prefix_name = ALGORITHM_NAME + "_all_metrics",
-                              dataset_name = dataset_name,
-                              metrics_to_report_list = ["PRECISION", "RECALL", "MAP", "MRR", "NDCG", "F1", "HIT_RATE", "ARHR", "NOVELTY", "DIVERSITY_MEAN_INTER_LIST", "DIVERSITY_HERFINDAHL", "COVERAGE_ITEM", "DIVERSITY_GINI", "SHANNON_ENTROPY"],
-                              cutoffs_to_report_list = [10],
-                              other_algorithm_list = [NeuCF_RecommenderWrapper])
-
+                              other_algorithm_list = [NeuMF_RecommenderWrapper])
 
 
 if __name__ == '__main__':
 
-    ALGORITHM_NAME = "NeuCF"
+    ALGORITHM_NAME = "NeuMF"
     CONFERENCE_NAME = "WWW"
 
     dataset_list = ["movielens1m", "pinterest"]
@@ -245,6 +224,6 @@ if __name__ == '__main__':
 
 
     print_parameters_latex_table(result_folder_path = "result_experiments/{}/".format(CONFERENCE_NAME),
-                                  results_file_prefix_name = ALGORITHM_NAME,
-                                  experiment_subfolder_list = dataset_list,
-                                  other_algorithm_list = [NeuCF_RecommenderWrapper])
+                                 results_file_prefix_name = ALGORITHM_NAME,
+                                 experiment_subfolder_list = dataset_list,
+                                 other_algorithm_list = [NeuMF_RecommenderWrapper])

@@ -7,22 +7,10 @@ Created on 22/11/17
 """
 
 
-from Base.NonPersonalizedRecommender import TopPop, Random
-from KNN.UserKNNCFRecommender import UserKNNCFRecommender
-from KNN.ItemKNNCFRecommender import ItemKNNCFRecommender
-from GraphBased.P3alphaRecommender import P3alphaRecommender
-from GraphBased.RP3betaRecommender import RP3betaRecommender
-from KNN.ItemKNNCBFRecommender import ItemKNNCBFRecommender
-
-
-from KNN.ItemKNN_CFCBF_Hybrid_Recommender import ItemKNN_CFCBF_Hybrid_Recommender
-
-from MatrixFactorization.PureSVDRecommender import PureSVDRecommender
-
+from Recommender_import_list import *
+from Conferences.KDD.CollaborativeVAE_our_interface.CollaborativeVAE_RecommenderWrapper import CollaborativeVAE_RecommenderWrapper
 
 from ParameterTuning.run_parameter_search import runParameterSearch_Collaborative, runParameterSearch_Content, runParameterSearch_Hybrid
-
-from Conferences.KDD.CollaborativeVAE_our_interface.CollaborativeVAE_RecommenderWrapper import CollaborativeVAE_RecommenderWrapper
 
 from ParameterTuning.SearchSingleCase import SearchSingleCase
 from ParameterTuning.SearchAbstractClass import SearchInputRecommenderParameters
@@ -34,7 +22,7 @@ import numpy as np
 
 
 from Utils.print_results_latex_table import print_time_statistics_latex_table, print_results_latex_table, print_parameters_latex_table
-
+from Utils.assertions_on_data_for_experiments import assert_implicit_data, assert_disjoint_matrices
 
 
 
@@ -61,18 +49,13 @@ def read_data_split_and_search_CollaborativeVAE(dataset_variant, train_interacti
 
 
     # Ensure IMPLICIT data
-    from Utils.assertions_on_data_for_experiments import assert_implicit_data
-
     assert_implicit_data([URM_train, URM_validation, URM_test])
-
-
+    assert_disjoint_matrices([URM_train, URM_validation, URM_test])
 
 
     # If directory does not exist, create
     if not os.path.exists(output_folder_path):
         os.makedirs(output_folder_path)
-
-
 
 
     collaborative_algorithm_list = [
@@ -82,11 +65,6 @@ def read_data_split_and_search_CollaborativeVAE(dataset_variant, train_interacti
         ItemKNNCFRecommender,
         P3alphaRecommender,
         RP3betaRecommender,
-        # SLIM_BPR_Cython,
-        # SLIMElasticNetRecommender,
-        # MatrixFactorization_BPR_Cython,
-        # MatrixFactorization_FunkSVD_Cython,
-        PureSVDRecommender,
     ]
 
     metric_to_optimize = "RECALL"
@@ -119,17 +97,17 @@ def read_data_split_and_search_CollaborativeVAE(dataset_variant, train_interacti
     # pool.close()
     # pool.join()
 
-    #
-    # for recommender_class in collaborative_algorithm_list:
-    #
-    #     try:
-    #
-    #         runParameterSearch_Collaborative_partial(recommender_class)
-    #
-    #     except Exception as e:
-    #
-    #         print("On recommender {} Exception {}".format(recommender_class, str(e)))
-    #         traceback.print_exc()
+
+    for recommender_class in collaborative_algorithm_list:
+
+        try:
+
+            runParameterSearch_Collaborative_partial(recommender_class)
+
+        except Exception as e:
+
+            print("On recommender {} Exception {}".format(recommender_class, str(e)))
+            traceback.print_exc()
 
 
 
@@ -140,49 +118,49 @@ def read_data_split_and_search_CollaborativeVAE(dataset_variant, train_interacti
 
     ICM_title_abstract = dataset.ICM_title_abstract.copy()
 
-    #
-    # try:
-    #
-    #     runParameterSearch_Content(ItemKNNCBFRecommender,
-    #                                URM_train = URM_train,
-    #                                metric_to_optimize = metric_to_optimize,
-    #                                evaluator_validation = evaluator_validation,
-    #                                evaluator_test = evaluator_test,
-    #                                output_folder_path = output_folder_path,
-    #                                parallelizeKNN = False,
-    #                                ICM_name = "ICM_title_abstract",
-    #                                ICM_object = ICM_title_abstract,
-    #                                allow_weighting = False,
-    #                                n_cases = 35)
-    #
-    # except Exception as e:
-    #
-    #     print("On recommender {} Exception {}".format(ItemKNNCBFRecommender, str(e)))
-    #     traceback.print_exc()
+
+    try:
+
+        runParameterSearch_Content(ItemKNNCBFRecommender,
+                                   URM_train = URM_train,
+                                   metric_to_optimize = metric_to_optimize,
+                                   evaluator_validation = evaluator_validation,
+                                   evaluator_test = evaluator_test,
+                                   output_folder_path = output_folder_path,
+                                   parallelizeKNN = False,
+                                   ICM_name = "ICM_title_abstract",
+                                   ICM_object = ICM_title_abstract,
+                                   allow_weighting = False,
+                                   n_cases = 35)
+
+    except Exception as e:
+
+        print("On recommender {} Exception {}".format(ItemKNNCBFRecommender, str(e)))
+        traceback.print_exc()
 
 
     ################################################################################################
     ###### Hybrid
 
-    # try:
-    #
-    #     runParameterSearch_Hybrid(ItemKNN_CFCBF_Hybrid_Recommender,
-    #                                URM_train = URM_train,
-    #                                metric_to_optimize = metric_to_optimize,
-    #                                evaluator_validation = evaluator_validation,
-    #                                evaluator_test = evaluator_test,
-    #                                output_folder_path = output_folder_path,
-    #                                parallelizeKNN = False,
-    #                                ICM_name = "ICM_title_abstract",
-    #                                ICM_object = ICM_title_abstract,
-    #                                allow_weighting = True,
-    #                                n_cases = 35)
-    #
-    #
-    # except Exception as e:
-    #
-    #     print("On recommender {} Exception {}".format(ItemKNN_CFCBF_Hybrid_Recommender, str(e)))
-    #     traceback.print_exc()
+    try:
+
+        runParameterSearch_Hybrid(ItemKNN_CFCBF_Hybrid_Recommender,
+                                   URM_train = URM_train,
+                                   metric_to_optimize = metric_to_optimize,
+                                   evaluator_validation = evaluator_validation,
+                                   evaluator_test = evaluator_test,
+                                   output_folder_path = output_folder_path,
+                                   parallelizeKNN = False,
+                                   ICM_name = "ICM_title_abstract",
+                                   ICM_object = ICM_title_abstract,
+                                   allow_weighting = True,
+                                   n_cases = 35)
+
+
+    except Exception as e:
+
+        print("On recommender {} Exception {}".format(ItemKNN_CFCBF_Hybrid_Recommender, str(e)))
+        traceback.print_exc()
 
 
 
@@ -229,10 +207,10 @@ def read_data_split_and_search_CollaborativeVAE(dataset_variant, train_interacti
                                             CONSTRUCTOR_POSITIONAL_ARGS = [URM_train, ICM_title_abstract],
                                             FIT_KEYWORD_ARGS = cvae_earlystopping_parameters)
 
-        # parameterSearch.search(recommender_parameters,
-        #                        fit_parameters_values=cvae_recommender_article_parameters,
-        #                        output_folder_path = output_folder_path,
-        #                        output_file_name_root = CollaborativeVAE_RecommenderWrapper.RECOMMENDER_NAME)
+        parameterSearch.search(recommender_parameters,
+                               fit_parameters_values=cvae_recommender_article_parameters,
+                               output_folder_path = output_folder_path,
+                               output_file_name_root = CollaborativeVAE_RecommenderWrapper.RECOMMENDER_NAME)
 
 
 
@@ -269,16 +247,6 @@ def read_data_split_and_search_CollaborativeVAE(dataset_variant, train_interacti
                               dataset_name = dataset_name,
                               metrics_to_report_list = ["RECALL"],
                               cutoffs_to_report_list = [50, 100, 150, 200, 250, 300],
-                              ICM_names_to_report_list = ICM_names_to_report_list,
-                              other_algorithm_list = [CollaborativeVAE_RecommenderWrapper])
-
-
-
-    print_results_latex_table(result_folder_path = output_folder_path,
-                              results_file_prefix_name = ALGORITHM_NAME + "_all_metrics",
-                              dataset_name = dataset_name,
-                              metrics_to_report_list = ["PRECISION", "RECALL", "MAP", "MRR", "NDCG", "F1", "HIT_RATE", "ARHR", "NOVELTY", "DIVERSITY_MEAN_INTER_LIST", "DIVERSITY_HERFINDAHL", "COVERAGE_ITEM", "DIVERSITY_GINI", "SHANNON_ENTROPY"],
-                              cutoffs_to_report_list = [150],
                               ICM_names_to_report_list = ICM_names_to_report_list,
                               other_algorithm_list = [CollaborativeVAE_RecommenderWrapper])
 

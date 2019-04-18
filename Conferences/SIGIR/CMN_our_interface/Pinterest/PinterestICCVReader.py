@@ -51,7 +51,7 @@ class PinterestICCVReader(object):
             #
             # self.URM_train, self.URM_validation, self.URM_test, self.URM_negative = split_train_validation_test_negative_leave_one_out_user_wise(URM_all, negative_items_per_positive=100)
 
-            dataset = Dataset_NeuralCollaborativeFiltering("Conferences/WWW/NeuCF_github/Data/pinterest-20")
+            dataset = Dataset_NeuralCollaborativeFiltering("Conferences/WWW/NeuMF_github/Data/pinterest-20")
 
             self.URM_train_original, self.URM_test, self.URM_test_negative = dataset.URM_train, dataset.URM_test, dataset.URM_test_negative
 
