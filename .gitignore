@@ -123,14 +123,3 @@ ENV/
 
 # macOS cache
 **/.DS_Store
-
-#ConvNCF unzipped data
-Conferences/IJCAI/ConvNCF_github/Data/yelp.test.negative
-Conferences/IJCAI/ConvNCF_github/Data/yelp.test.rating
-Conferences/IJCAI/ConvNCF_github/Data/yelp.train.rating
-Conferences/IJCAI/ConvNCF_github/Data/gowalla.test.negative
-Conferences/IJCAI/ConvNCF_github/Data/gowalla.test.rating
-Conferences/IJCAI/ConvNCF_github/Data/gowalla.train.rating
-
-#CoupledCF png
-Conferences/IJCAI/CoupledCF_original/*.png
