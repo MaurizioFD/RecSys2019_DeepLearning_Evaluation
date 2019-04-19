@@ -5,8 +5,6 @@ Instructions on how to install and run the experiments are accessible [HERE](REA
 
 
 ## Full results
-http://pandoc.org/try/
-
 
 * [SIGIR: Collaborative Memory Networks](#SIGIR-Collaborative-Memory-Networks)
 * [RecSys: Spectral Collaborative Filtering](#RecSys-Spectral-Collaborative-Filtering)
