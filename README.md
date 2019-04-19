@@ -91,7 +91,7 @@ sudo apt install gcc
 sudo apt-get install python3-dev
 ```
 
-At this point you can compile all Cython algorithms by running the following command. The script will compile within the current active environment. The code has been developed for Linux and Windows platforms. During the compilation you may see some warnings. 
+At this point you can compile all Cython algorithms by running the following command. The script will compile within the current active environment. The code has been developed for Linux platforms. During the compilation you may see some warnings. 
  
 ```Python
 python run_compile_all_cython.py
