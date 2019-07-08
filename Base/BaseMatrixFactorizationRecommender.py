@@ -3,7 +3,7 @@
 """
 Created on 16/09/2017
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 from Base.BaseRecommender import BaseRecommender

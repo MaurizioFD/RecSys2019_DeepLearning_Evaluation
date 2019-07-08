@@ -3,7 +3,7 @@
 """
 Created on 06/01/2018
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 import subprocess, os, sys, shutil

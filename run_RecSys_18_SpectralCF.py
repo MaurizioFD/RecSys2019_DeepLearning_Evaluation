@@ -3,7 +3,8 @@
 """
 Created on 22/11/17
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
+@author: Simone Boglio
 
 """
 

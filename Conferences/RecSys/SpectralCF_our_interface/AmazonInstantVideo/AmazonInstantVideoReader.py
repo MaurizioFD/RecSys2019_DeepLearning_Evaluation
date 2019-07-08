@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-@author: Anonymous authors
+@author: Simone Boglio
 """
 
 import os, pickle

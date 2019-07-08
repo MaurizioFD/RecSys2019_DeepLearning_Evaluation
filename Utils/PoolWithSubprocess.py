@@ -3,7 +3,7 @@
 """
 Created on 07/06/18
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 import multiprocessing
 # We must import this explicitly, it is not imported by the top-level

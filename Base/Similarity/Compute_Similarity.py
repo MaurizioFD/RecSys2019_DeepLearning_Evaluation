@@ -3,7 +3,7 @@
 """
 Created on 06/06/18
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 import numpy as np

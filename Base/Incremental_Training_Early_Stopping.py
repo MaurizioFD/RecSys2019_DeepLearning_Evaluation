@@ -3,7 +3,7 @@
 """
 Created on 06/07/2018
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 import time, sys

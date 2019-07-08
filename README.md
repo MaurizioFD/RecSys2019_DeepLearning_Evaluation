@@ -1,4 +1,22 @@
-# DeepLearning RS Evaluation
+# RecSys 2019 - DeepLearning RS Evaluation
+
+Please cite our article if you use this repository or algorithm.
+
+
+```
+@Article{Ferraridacrema2019,
+author={Ferrari Dacrema, Maurizio
+and Cremonesi, Paolo
+and Jannach, Dietmar},
+title={Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches},
+journal={Proceedings of the 13th ACM Conference on Recommender Systems (RecSys 2019)},
+year={2019},
+doi={nnnnnnn},
+url={nnnnnnn},
+note={Source: \url{https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation}},
+}
+```
+
 
 ## Full results and hyperparameters
 The full results and corresponding hyperparameters for all DL algorithms are accessible [HERE](FULL_RESULTS.md).

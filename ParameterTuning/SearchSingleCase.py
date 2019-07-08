@@ -3,7 +3,7 @@
 """
 Created on 14/12/18
 
-@author: Anonymous authors
+@author: Emanuele Chioso, Maurizio Ferrari Dacrema
 """
 
 import os

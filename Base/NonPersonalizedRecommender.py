@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-@author: Anonymous authors
+@author: Massimo Quadrana
 """
 
 import numpy as np

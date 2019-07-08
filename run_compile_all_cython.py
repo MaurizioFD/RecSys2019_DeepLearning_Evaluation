@@ -3,7 +3,7 @@
 """
 Created on 30/03/2019
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 import sys, glob, traceback, os

@@ -3,7 +3,7 @@
 """
 Created on 30/09/17
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 from Base.Recommender_utils import similarityMatrixTopK

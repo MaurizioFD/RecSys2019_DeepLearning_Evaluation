@@ -3,7 +3,7 @@
 """
 Created on 18/06/2018
 
-@author: Anonymous authors
+@author: Maurizio Ferrari Dacrema
 """
 
 def estimate_sparse_size(num_rows, topK):
