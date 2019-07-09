@@ -1,6 +1,8 @@
 # RecSys 2019 - DeepLearning RS Evaluation
 
-Please cite our article if you use this repository or algorithm.
+This is the repository of our article RecSys 2019 "Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches".
+
+Please cite our article if you use this repository or algorithms.
 
 
 ```
@@ -109,7 +111,7 @@ sudo apt install gcc
 sudo apt-get install python3-dev
 ```
 
-At this point you can compile all Cython algorithms by running the following command. The script will compile within the current active environment. The code has been developed for Linux platforms. During the compilation you may see some warnings. 
+At this point you can compile all Cython algorithms by running the following command. The script will compile within the current active environment. The code has been developed for Linux and Windows platforms. During the compilation you may see some warnings. 
  
 ```Python
 python run_compile_all_cython.py

@@ -543,11 +543,6 @@ def read_data_split_and_search():
         RP3betaRecommender,
         ItemKNNCFRecommender,
         UserKNNCFRecommender,
-        # MatrixFactorization_BPR_Cython,
-        # MatrixFactorization_FunkSVD_Cython,
-        # PureSVDRecommender,
-        # SLIM_BPR_Cython,
-        # SLIMElasticNetRecommender
     ]
 
 
