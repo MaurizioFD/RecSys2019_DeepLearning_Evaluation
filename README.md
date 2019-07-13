@@ -13,8 +13,6 @@ and Jannach, Dietmar},
 title={Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches},
 journal={Proceedings of the 13th ACM Conference on Recommender Systems (RecSys 2019)},
 year={2019},
-doi={nnnnnnn},
-url={nnnnnnn},
 note={Source: \url{https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation}},
 }
 ```
