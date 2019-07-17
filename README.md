@@ -14,6 +14,7 @@ title={Are We Really Making Much Progress? A Worrying Analysis of Recent Neural 
 journal={Proceedings of the 13th ACM Conference on Recommender Systems (RecSys 2019)},
 year={2019},
 doi={10.1145/3298689.3347058},
+Eprint = {arXiv:1907.06902},
 note={Source: \url{https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation}},
 }
 ```
