@@ -132,7 +132,7 @@ cdef class Compute_Similarity_Cython:
         elif similarity == "cosine":
             pass
         else:
-            raise ValueError("Cosine_Similarity: value for paramether 'mode' not recognized."
+            raise ValueError("Cosine_Similarity: value for parameter 'mode' not recognized."
                              " Allowed values are: 'cosine', 'pearson', 'adjusted', 'asymmetric', 'jaccard', 'tanimoto',"
                              "dice, tversky."
                              " Passed value was '{}'".format(similarity))

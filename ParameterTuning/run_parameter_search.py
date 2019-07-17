@@ -83,8 +83,8 @@ def runParameterSearch_Hybrid(recommender_class, URM_train, ICM_object, ICM_name
             similarity_type_list = ['cosine', 'jaccard', "asymmetric", "dice", "tversky"]
 
 
-        hyperparamethers_range_dictionary = {}
-        hyperparamethers_range_dictionary["ICM_weight"] = Real(low = 1e-2, high = 1e2, prior = 'log-uniform')
+        hyperparameters_range_dictionary = {}
+        hyperparameters_range_dictionary["ICM_weight"] = Real(low = 1e-2, high = 1e2, prior = 'log-uniform')
 
         recommender_parameters = SearchInputRecommenderParameters(
             CONSTRUCTOR_POSITIONAL_ARGS = [ICM_object, URM_train],
@@ -95,7 +95,7 @@ def runParameterSearch_Hybrid(recommender_class, URM_train, ICM_object, ICM_name
 
 
         run_KNNCFRecommender_on_similarity_type_partial = partial(run_KNNRecommender_on_similarity_type,
-                                                       parameter_search_space = hyperparamethers_range_dictionary,
+                                                       parameter_search_space = hyperparameters_range_dictionary,
                                                        recommender_parameters = recommender_parameters,
                                                        parameterSearch = parameterSearch,
                                                        n_cases = n_cases,
@@ -143,31 +143,31 @@ def run_KNNRecommender_on_similarity_type(similarity_type, parameterSearch,
 
     original_parameter_search_space = parameter_search_space
 
-    hyperparamethers_range_dictionary = {}
-    hyperparamethers_range_dictionary["topK"] = Integer(5, 800)
-    hyperparamethers_range_dictionary["shrink"] = Integer(0, 1000)
-    hyperparamethers_range_dictionary["similarity"] = Categorical([similarity_type])
-    hyperparamethers_range_dictionary["normalize"] = Categorical([True, False])
+    hyperparameters_range_dictionary = {}
+    hyperparameters_range_dictionary["topK"] = Integer(5, 800)
+    hyperparameters_range_dictionary["shrink"] = Integer(0, 1000)
+    hyperparameters_range_dictionary["similarity"] = Categorical([similarity_type])
+    hyperparameters_range_dictionary["normalize"] = Categorical([True, False])
 
     if similarity_type == "asymmetric":
-        hyperparamethers_range_dictionary["asymmetric_alpha"] = Real(low = 0, high = 2, prior = 'uniform')
-        hyperparamethers_range_dictionary["normalize"] = Categorical([True])
+        hyperparameters_range_dictionary["asymmetric_alpha"] = Real(low = 0, high = 2, prior = 'uniform')
+        hyperparameters_range_dictionary["normalize"] = Categorical([True])
 
     elif similarity_type == "tversky":
-        hyperparamethers_range_dictionary["tversky_alpha"] = Real(low = 0, high = 2, prior = 'uniform')
-        hyperparamethers_range_dictionary["tversky_beta"] = Real(low = 0, high = 2, prior = 'uniform')
-        hyperparamethers_range_dictionary["normalize"] = Categorical([True])
+        hyperparameters_range_dictionary["tversky_alpha"] = Real(low = 0, high = 2, prior = 'uniform')
+        hyperparameters_range_dictionary["tversky_beta"] = Real(low = 0, high = 2, prior = 'uniform')
+        hyperparameters_range_dictionary["normalize"] = Categorical([True])
 
     elif similarity_type == "euclidean":
-        hyperparamethers_range_dictionary["normalize"] = Categorical([True, False])
-        hyperparamethers_range_dictionary["normalize_avg_row"] = Categorical([True, False])
-        hyperparamethers_range_dictionary["similarity_from_distance_mode"] = Categorical(["lin", "log", "exp"])
+        hyperparameters_range_dictionary["normalize"] = Categorical([True, False])
+        hyperparameters_range_dictionary["normalize_avg_row"] = Categorical([True, False])
+        hyperparameters_range_dictionary["similarity_from_distance_mode"] = Categorical(["lin", "log", "exp"])
 
     if similarity_type in ["cosine", "asymmetric", "euclidean"] and allow_weighting:
-        hyperparamethers_range_dictionary["feature_weighting"] = Categorical(["none", "BM25", "TF-IDF"])
+        hyperparameters_range_dictionary["feature_weighting"] = Categorical(["none", "BM25", "TF-IDF"])
 
 
-    local_parameter_search_space = {**hyperparamethers_range_dictionary, **original_parameter_search_space}
+    local_parameter_search_space = {**hyperparameters_range_dictionary, **original_parameter_search_space}
 
     parameterSearch.search(recommender_parameters,
                            parameter_search_space = local_parameter_search_space,
@@ -395,10 +395,10 @@ def runParameterSearch_Collaborative(recommender_class, URM_train, metric_to_opt
 
         if recommender_class is P3alphaRecommender:
 
-            hyperparamethers_range_dictionary = {}
-            hyperparamethers_range_dictionary["topK"] = Integer(5, 800)
-            hyperparamethers_range_dictionary["alpha"] = Real(low = 0, high = 2, prior = 'uniform')
-            hyperparamethers_range_dictionary["normalize_similarity"] = Categorical([True, False])
+            hyperparameters_range_dictionary = {}
+            hyperparameters_range_dictionary["topK"] = Integer(5, 800)
+            hyperparameters_range_dictionary["alpha"] = Real(low = 0, high = 2, prior = 'uniform')
+            hyperparameters_range_dictionary["normalize_similarity"] = Categorical([True, False])
 
             recommender_parameters = SearchInputRecommenderParameters(
                 CONSTRUCTOR_POSITIONAL_ARGS = [URM_train],
@@ -412,11 +412,11 @@ def runParameterSearch_Collaborative(recommender_class, URM_train, metric_to_opt
 
         if recommender_class is RP3betaRecommender:
 
-            hyperparamethers_range_dictionary = {}
-            hyperparamethers_range_dictionary["topK"] = Integer(5, 800)
-            hyperparamethers_range_dictionary["alpha"] = Real(low = 0, high = 2, prior = 'uniform')
-            hyperparamethers_range_dictionary["beta"] = Real(low = 0, high = 2, prior = 'uniform')
-            hyperparamethers_range_dictionary["normalize_similarity"] = Categorical([True, False])
+            hyperparameters_range_dictionary = {}
+            hyperparameters_range_dictionary["topK"] = Integer(5, 800)
+            hyperparameters_range_dictionary["alpha"] = Real(low = 0, high = 2, prior = 'uniform')
+            hyperparameters_range_dictionary["beta"] = Real(low = 0, high = 2, prior = 'uniform')
+            hyperparameters_range_dictionary["normalize_similarity"] = Categorical([True, False])
 
             recommender_parameters = SearchInputRecommenderParameters(
                 CONSTRUCTOR_POSITIONAL_ARGS = [URM_train],
@@ -429,8 +429,8 @@ def runParameterSearch_Collaborative(recommender_class, URM_train, metric_to_opt
 
         if recommender_class is PureSVDRecommender:
 
-            hyperparamethers_range_dictionary = {}
-            hyperparamethers_range_dictionary["num_factors"] = Integer(1, 250)
+            hyperparameters_range_dictionary = {}
+            hyperparameters_range_dictionary["num_factors"] = Integer(1, 250)
 
             recommender_parameters = SearchInputRecommenderParameters(
                 CONSTRUCTOR_POSITIONAL_ARGS = [URM_train],
@@ -444,10 +444,10 @@ def runParameterSearch_Collaborative(recommender_class, URM_train, metric_to_opt
 
         if recommender_class is SLIMElasticNetRecommender:
 
-            hyperparamethers_range_dictionary = {}
-            hyperparamethers_range_dictionary["topK"] = Integer(5, 800)
-            hyperparamethers_range_dictionary["l1_ratio"] = Real(low = 1e-5, high = 1.0, prior = 'log-uniform')
-            hyperparamethers_range_dictionary["alpha"] = Real(low = 1e-3, high = 1.0, prior = 'uniform')
+            hyperparameters_range_dictionary = {}
+            hyperparameters_range_dictionary["topK"] = Integer(5, 800)
+            hyperparameters_range_dictionary["l1_ratio"] = Real(low = 1e-5, high = 1.0, prior = 'log-uniform')
+            hyperparameters_range_dictionary["alpha"] = Real(low = 1e-3, high = 1.0, prior = 'uniform')
 
             recommender_parameters = SearchInputRecommenderParameters(
                 CONSTRUCTOR_POSITIONAL_ARGS = [URM_train],
@@ -462,7 +462,7 @@ def runParameterSearch_Collaborative(recommender_class, URM_train, metric_to_opt
 
         ## Final step, after the hyperparameter range has been defined for each type of algorithm
         parameterSearch.search(recommender_parameters,
-                               parameter_search_space = hyperparamethers_range_dictionary,
+                               parameter_search_space = hyperparameters_range_dictionary,
                                n_cases = n_cases,
                                output_folder_path = output_folder_path,
                                output_file_name_root = output_file_name_root,

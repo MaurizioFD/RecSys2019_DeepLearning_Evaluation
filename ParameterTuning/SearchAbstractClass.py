@@ -12,7 +12,7 @@ class SearchInputRecommenderParameters(object):
 
 
     def __init__(self,
-                   # Dictionary of paramethers needed by the constructor
+                   # Dictionary of parameters needed by the constructor
                    CONSTRUCTOR_POSITIONAL_ARGS = None,
                    CONSTRUCTOR_KEYWORD_ARGS = None,
 
@@ -93,7 +93,7 @@ class SearchAbstractClass(object):
         self.recommender_class = recommender_class
 
         self.results_test_best = {}
-        self.paramether_dictionary_best = {}
+        self.parameter_dictionary_best = {}
 
         if evaluator_validation is None:
             raise ValueError("{}: evaluator_validation must be provided".format(self.ALGORITHM_NAME))

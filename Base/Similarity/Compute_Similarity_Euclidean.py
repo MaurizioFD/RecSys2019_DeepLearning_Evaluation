@@ -53,7 +53,7 @@ class Compute_Similarity_Euclidean:
         elif similarity_from_distance_mode == "log":
             self.similarity_is_log = True
         else:
-            raise ValueError("Compute_Similarity_Euclidean: value for paramether 'mode' not recognized."
+            raise ValueError("Compute_Similarity_Euclidean: value for parameter 'mode' not recognized."
                              " Allowed values are: 'exp', 'lin', 'log'."
                              " Passed value was '{}'".format(similarity_from_distance_mode))
 

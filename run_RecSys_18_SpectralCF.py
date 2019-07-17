@@ -58,12 +58,12 @@ def runParameterSearch_SpectralCF(recommender_class, URM_train, earlystopping_pa
 
     if recommender_class is SpectralCF_RecommenderWrapper:
 
-        hyperparamethers_range_dictionary = {}
-        hyperparamethers_range_dictionary["batch_size"] = Categorical([1024])
-        hyperparamethers_range_dictionary["embedding_size"] =  Categorical([4, 8, 16, 32])
-        hyperparamethers_range_dictionary["decay"] = Real(low = 1e-5, high = 1e-1, prior = 'log-uniform')
-        hyperparamethers_range_dictionary["learning_rate"] = Real(low = 1e-5, high = 1e-2, prior = 'log-uniform')
-        hyperparamethers_range_dictionary["k"] = Integer(low = 1, high = 6)
+        hyperparameters_range_dictionary = {}
+        hyperparameters_range_dictionary["batch_size"] = Categorical([1024])
+        hyperparameters_range_dictionary["embedding_size"] =  Categorical([4, 8, 16, 32])
+        hyperparameters_range_dictionary["decay"] = Real(low = 1e-5, high = 1e-1, prior = 'log-uniform')
+        hyperparameters_range_dictionary["learning_rate"] = Real(low = 1e-5, high = 1e-2, prior = 'log-uniform')
+        hyperparameters_range_dictionary["k"] = Integer(low = 1, high = 6)
 
         recommender_parameters = SearchInputRecommenderParameters(
             CONSTRUCTOR_POSITIONAL_ARGS = [URM_train],
@@ -76,7 +76,7 @@ def runParameterSearch_SpectralCF(recommender_class, URM_train, earlystopping_pa
     #########################################################################################################
 
     parameterSearch.search(recommender_parameters,
-                           parameter_search_space = hyperparamethers_range_dictionary,
+                           parameter_search_space = hyperparameters_range_dictionary,
                            n_cases = n_cases,
                            output_folder_path = output_folder_path,
                            output_file_name_root = output_file_name_root,

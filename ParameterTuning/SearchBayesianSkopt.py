@@ -162,7 +162,7 @@ class SearchBayesianSkopt(SearchAbstractClass):
                 self.hyperparams_single_value[name] = hyperparam
 
             else:
-                raise ValueError("{}: Unexpected paramether type: {} - {}".format(self.ALGORITHM_NAME, str(name), str(hyperparam)))
+                raise ValueError("{}: Unexpected parameter type: {} - {}".format(self.ALGORITHM_NAME, str(name), str(hyperparam)))
 
 
 

@@ -97,7 +97,7 @@ class EvaluatorModelLoss(object):
     def __init__(self):
         pass
 
-    def evaluateRecommender(self, recommender_object, paramether_dictionary = None):
+    def evaluateRecommender(self, recommender_object, parameter_dictionary = None):
 
         average_loss = recommender_object.model._average_loss_evaluation
 
