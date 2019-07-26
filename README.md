@@ -1,9 +1,11 @@
 # RecSys 2019 - DeepLearning RS Evaluation
 
 This is the repository of our article RecSys 2019 "Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches".
+The full text of the article is available [here](https://arxiv.org/abs/1907.06902), source code of our experiments and full results are available [here](https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation).
 
-Please cite our article if you use this repository or algorithms.
+We are still actively pursuing this research direction in evaluation and reproducibility, we are open to collaboration with other reseachers.
 
+Please cite our article if you use this repository or our implementations of baseline algorithms, remember also to cite the original authors if you use our porting of the DL algorithms.
 
 ```
 @Article{Ferraridacrema2019,
