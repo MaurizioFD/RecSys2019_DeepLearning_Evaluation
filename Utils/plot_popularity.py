@@ -92,7 +92,7 @@ def plot_popularity_bias(URM_object_list, URM_name_list, output_img_path, sort_o
 
     plt.savefig(output_img_path + ".pdf", dpi = 1200)
 
-    plt.savefig(output_img_path + ".pgf")
+    #plt.savefig(output_img_path + ".pgf")
 
     plt.close()
 

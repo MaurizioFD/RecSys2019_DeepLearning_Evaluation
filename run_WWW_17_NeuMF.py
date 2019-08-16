@@ -80,7 +80,7 @@ def read_data_split_and_search_NeuCF(dataset_name):
         ItemKNNCFRecommender,
         P3alphaRecommender,
         RP3betaRecommender,
-        PureSVDRecommender,
+        SLIMElasticNetRecommender
     ]
 
     metric_to_optimize = "HIT_RATE"
@@ -130,22 +130,28 @@ def read_data_split_and_search_NeuCF(dataset_name):
     ################################################################################################
     ###### NeuMF
 
-
-
     try:
+
+
+        if dataset_name == "movielens1m":
+            num_factors = 64
+        elif dataset_name == "pinterest":
+            num_factors = 16
+
 
         neuMF_article_parameters = {
             "epochs": 100,
             "epochs_gmf": 100,
             "epochs_mlp": 100,
             "batch_size": 256,
-            "num_factors": 8,
-            "layers": [64,32,16,8],
+            "num_factors": num_factors,
+            "layers": [num_factors*4, num_factors*2, num_factors],
             "reg_mf": 0.0,
-            "reg_layers": [0,0,0,0],
+            "reg_layers": [0,0,0],
             "num_negatives": 4,
             "learning_rate": 1e-3,
-            "learner": "adam",
+            "learner": "sgd",
+            "learner_pretrain": "adam",
             "pretrain": True
         }
 
@@ -171,7 +177,6 @@ def read_data_split_and_search_NeuCF(dataset_name):
                                fit_parameters_values=neuMF_article_parameters,
                                output_folder_path = output_folder_path,
                                output_file_name_root = NeuMF_RecommenderWrapper.RECOMMENDER_NAME)
-
 
 
     except Exception as e:

@@ -259,7 +259,9 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
             reg_layers = [0,0,0,0],
             num_negatives = 4,
             learning_rate = 1e-3,
-            learner = 'adam',
+            learning_rate_pretrain = 1e-3,
+            learner = 'sgd',
+            learner_pretrain = 'adam',
             pretrain = True,
             root_folder_pretrain = None,
             **earlystopping_kwargs):
@@ -273,7 +275,9 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
         :param reg_layers: Regularization for each MLP layer. reg_layers[0] is the regularization for embeddings.
         :param num_negatives: Number of negative instances to pair with a positive instance.
         :param learning_rate:
+        :param learning_rate_pretrain:
         :param learner: adagrad, adam, rmsprop, sgd
+        :param learner_pretrain: adagrad, adam, rmsprop, sgd
         :param root_folder_pretrain: Specify the pretrain model folder where to save MF and MLP for MF part.
         :param do_pretrain:
         :return:
@@ -286,9 +290,10 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
         self.reg_mf = reg_mf
         self.reg_layers = reg_layers.copy()
         self.num_negatives = num_negatives
-        learning_rate = learning_rate
 
         assert learner in ["adagrad", "adam", "rmsprop", "sgd"]
+        assert learner_pretrain in ["adagrad", "adam", "rmsprop", "sgd"]
+        assert len(layers) == len(reg_layers)
 
         self.pretrain = pretrain
 
@@ -306,7 +311,7 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
             print("NeuMF_RecommenderWrapper: Pretraining GMF...")
 
             self.model = GMF_get_model(self.n_users, self.n_items, self.mf_dim)
-            self.model = set_learner(self.model, learning_rate, learner)
+            self.model = set_learner(self.model, learning_rate_pretrain, learner_pretrain)
 
             self._best_model = deep_clone_model(self.model)
 
@@ -327,7 +332,7 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
             print("NeuMF_RecommenderWrapper: Pretraining MLP...")
 
             self.model = MLP_get_model(self.n_users, self.n_items, self.layers, self.reg_layers)
-            self.model = set_learner(self.model, learning_rate, learner)
+            self.model = set_learner(self.model, learning_rate_pretrain, learner_pretrain)
 
             self._best_model = deep_clone_model(self.model)
 
