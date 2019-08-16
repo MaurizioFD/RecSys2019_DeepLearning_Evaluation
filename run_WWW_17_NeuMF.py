@@ -150,6 +150,7 @@ def read_data_split_and_search_NeuCF(dataset_name):
             "reg_layers": [0,0,0],
             "num_negatives": 4,
             "learning_rate": 1e-3,
+            "learning_rate_pretrain": 1e-3,
             "learner": "sgd",
             "learner_pretrain": "adam",
             "pretrain": True
