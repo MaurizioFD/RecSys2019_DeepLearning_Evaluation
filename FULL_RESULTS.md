@@ -570,8 +570,8 @@ Instructions on how to install and run the experiments are accessible [HERE](REA
 |           | beta                 |      0.5613       |      0.5394       |
 |           | normalize similarity |       True        |       True        |
 | SLIM      | topK                |        682         |        603         |
-/           | l1 ratio              |      7.58E-04          |        1e-05         |
-/           | alpha               |        0.0874         |        0.5745         |
+|           | l1 ratio              |      7.58E-04          |        1e-05         |
+|           | alpha               |        0.0874         |        0.5745         |
 | NeuMF     | epochs               |        15         |         10         |
 |           | epochs gmf           |        10         |        25        |
 |           | epochs mlp           |        10         |        25         |
