@@ -98,6 +98,8 @@ class MultiVAE_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_St
         self.anneal_cap = anneal_cap
         self.batches_per_epoch = int(np.ceil(float(self.n_users) / batch_size))
 
+        self.update_count = 0.0
+
         if p_dims is None:
             self.p_dims = [200, 600, self.n_items]
         else:
@@ -168,9 +170,6 @@ class MultiVAE_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_St
 
     def _run_epoch(self, num_epoch):
 
-
-        update_count = 0.0
-
         user_index_list_train = list(range(self.n_users))
 
         np.random.shuffle(user_index_list_train)
@@ -186,7 +185,7 @@ class MultiVAE_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_St
             X = X.astype('float32')
 
             if self.total_anneal_steps > 0:
-                anneal = min(self.anneal_cap, 1. * update_count / self.total_anneal_steps)
+                anneal = min(self.anneal_cap, 1. * self.update_count / self.total_anneal_steps)
             else:
                 anneal = self.anneal_cap
 
@@ -201,7 +200,7 @@ class MultiVAE_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_St
                 self.summary_writer.add_summary(summary_train,
                                            global_step=num_epoch * self.batches_per_epoch + bnum)
 
-            update_count += 1
+            self.update_count += 1
 
 
 
