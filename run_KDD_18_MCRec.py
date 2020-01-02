@@ -26,18 +26,11 @@ from Utils.plot_popularity import plot_popularity_bias, save_popularity_statisti
 def read_data_split_and_search_MCRec(dataset_name):
 
     from Conferences.KDD.MCRec_our_interface.Movielens100K.Movielens100KReader import Movielens100KReader
-    from Conferences.KDD.MCRec_our_interface.LastFM.LastFMReader import LastFMReader
-    from Conferences.KDD.MCRec_our_interface.Yelp.YelpReader import YelpReader
 
 
     if dataset_name == "movielens100k":
         dataset = Movielens100KReader()
 
-    elif dataset_name == "yelp":
-        dataset = YelpReader()
-
-    elif dataset_name == "lastfm":
-        dataset = LastFMReader()
 
 
     output_folder_path = "result_experiments/{}/{}_{}/".format(CONFERENCE_NAME, ALGORITHM_NAME, dataset_name)
