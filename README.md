@@ -1,7 +1,7 @@
 # RecSys 2019 - DeepLearning RS Evaluation
 
 This is the repository of our article RecSys 2019 "Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches".
-The full text of the article is available on [ACM Digital Library](https://dl.acm.org/authorize?N684126), [ResearchGate](https://www.researchgate.net/publication/334506947_Are_We_Really_Making_Much_Progress_A_Worrying_Analysis_of_Recent_Neural_Recommendation_Approaches) or [ArXiv](https://arxiv.org/abs/1907.06902), source code of our experiments and full results are available [here](https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation).
+The full text of the article is freely available on [ACM Digital Library](https://dl.acm.org/authorize?N684126), [ResearchGate](https://www.researchgate.net/publication/334506947_Are_We_Really_Making_Much_Progress_A_Worrying_Analysis_of_Recent_Neural_Recommendation_Approaches) or [ArXiv](https://arxiv.org/abs/1907.06902), source code of our experiments and full results are available [here](https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation).
 The [slides](Slides/RecSys2019_DeepLearning_Evaluation_Slides.pdf) and [poster](Slides/RecSys2019_DeepLearning_Evaluation_Poster.pdf) are also available.
 
 **NEWS: The preprint of the extended version of this paper (still under review) is now available on [ArXiv](https://arxiv.org/abs/1911.07698) "A Troubling Analysis of Reproducibility and Progress in Recommender Systems Research". We welcome your feedback!**
