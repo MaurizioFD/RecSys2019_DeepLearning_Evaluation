@@ -8,15 +8,16 @@ Created on 18/12/18
 
 
 from Base.BaseRecommender import BaseRecommender
+from Base.BaseTempFolder import BaseTempFolder
 from Base.Incremental_Training_Early_Stopping import Incremental_Training_Early_Stopping
-
+from Base.DataIO import DataIO
 
 import numpy as np
 import scipy.sparse as sps
 
 import tensorflow as tf
 import random as rd
-import os, shutil
+import os, shutil, math
 
 from Conferences.RecSys.SpectralCF_our_interface.SpectralCF import SpectralCF
 
@@ -84,11 +85,10 @@ class Data(object):
 
 
 
-class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopping):
+class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopping, BaseTempFolder):
 
 
     RECOMMENDER_NAME = "SpectralCF_RecommenderWrapper"
-    DEFAULT_TEMP_FILE_FOLDER = './result_experiments/__Temp_SpectralCF_RecommenderWrapper/'
 
     def __init__(self, URM_train):
         super(SpectralCF_RecommenderWrapper, self).__init__(URM_train)
@@ -102,13 +102,27 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
             user_batch = np.zeros((self.batch_size), dtype=np.int64)
             user_batch[0:len(user_id_array)] = user_id_array
 
-        elif len(user_id_array) < self.batch_size:
-            assert False, "not supported"
         else:
             user_batch = user_id_array
 
 
-        item_scores_to_compute = self.sess.run(self.model.all_ratings, {self.model.users: user_batch})
+        # If user id batch is too long, slice the current user_id_array in blocks that the model can handle
+        if len(user_id_array) > self.batch_size:
+
+            n_split = math.ceil(len(user_id_array)/ self.batch_size)
+
+            split_list = np.array_split(user_id_array, n_split)
+
+            item_scores_to_compute = - np.ones((len(user_id_array), self.n_items)) * np.inf
+
+            start_pos = 0
+            for user_id_array_split in split_list:
+                item_scores_to_compute[start_pos:start_pos+len(user_id_array_split),:] = self._compute_item_score(user_id_array_split, items_to_compute=items_to_compute)
+                start_pos+=len(user_id_array_split)
+
+        else:
+
+            item_scores_to_compute = self.sess.run(self.model.all_ratings, {self.model.users: user_batch})
 
 
         if len(user_id_array) < self.batch_size:
@@ -116,11 +130,10 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
 
 
         if items_to_compute is not None:
-            item_scores = - np.ones((len(user_id_array), self.n_items - 1)) * np.inf
+            item_scores = - np.ones((len(user_id_array), self.n_items)) * np.inf
             item_scores[:, items_to_compute] = item_scores_to_compute[:, items_to_compute]
         else:
             item_scores = item_scores_to_compute
-
 
         return item_scores
 
@@ -139,15 +152,7 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
             ):
 
 
-        if temp_file_folder is None:
-            print("{}: Using default Temp folder '{}'".format(self.RECOMMENDER_NAME, self.DEFAULT_TEMP_FILE_FOLDER))
-            self.temp_file_folder = self.DEFAULT_TEMP_FILE_FOLDER
-        else:
-            print("{}: Using Temp folder '{}'".format(self.RECOMMENDER_NAME, temp_file_folder))
-            self.temp_file_folder = temp_file_folder
-
-        if not os.path.isdir(self.temp_file_folder):
-            os.makedirs(self.temp_file_folder)
+        self.temp_file_folder = self._get_unique_temp_folder(input_temp_file_folder=temp_file_folder)
 
 
         self.k = k
@@ -176,8 +181,8 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
         self.model.compute_eigenvalues()
 
         # Keep it to avoid recomputing every time the model is loaded
-        self.model_lamda = self.model.lamda.copy()
-        self.model_U = self.model.U
+        # self.model_lamda = self.model.lamda.copy()
+        # self.model_U = self.model.U
 
         self.model.build_graph()
 
@@ -204,14 +209,13 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
         self.sess.close()
         self.sess = tf.Session()
 
-        self.loadModel(self.temp_file_folder, file_name="_best_model")
+        self.load_model(self.temp_file_folder, file_name="_best_model")
 
 
         print("SpectralCF_RecommenderWrapper: Tranining complete")
 
-        if self.temp_file_folder == self.DEFAULT_TEMP_FILE_FOLDER:
-            print("{}: cleaning temporary files".format(self.RECOMMENDER_NAME))
-            shutil.rmtree(self.DEFAULT_TEMP_FILE_FOLDER, ignore_errors=True)
+
+        self._clean_temp_folder(temp_file_folder=self.temp_file_folder)
 
 
 
@@ -220,7 +224,7 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
 
 
     def _update_best_model(self):
-        self.saveModel(self.temp_file_folder, file_name="_best_model")
+        self.save_model(self.temp_file_folder, file_name="_best_model")
 
 
 
@@ -234,6 +238,10 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
 
         print("SpectralCF_RecommenderWrapper: Epoch {}, loss {:.2E}".format(currentEpoch+1, loss))
 
+        if not np.isfinite(loss):
+            self._clean_temp_folder(temp_file_folder=self.temp_file_folder)
+
+            assert False, "SpectralCF_RecommenderWrapper: loss is not a finite number, terminating!"
 
 
 
@@ -253,49 +261,46 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
 
 
 
-    def saveModel(self, folder_path, file_name = None):
 
-        import pickle
+    def save_model(self, folder_path, file_name = None):
+
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Saving model in file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving model in file '{}'".format(folder_path + file_name))
 
-        dictionary_to_save = {"k": self.k,
+        data_dict_to_save = {"k": self.k,
                               "embedding_size": self.embedding_size,
                               "learning_rate": self.learning_rate,
                               "decay": self.decay,
                               "batch_size": self.batch_size,
-                              "model_lamda": self.model_lamda,
-                              "model_U": self.model_U,
+                              # "model_lamda": self.model_lamda,
+                              # "model_U": self.model_U,
                               }
 
-        pickle.dump(dictionary_to_save,
-                    open(folder_path + file_name, "wb"),
-                    protocol=pickle.HIGHEST_PROTOCOL)
+        dataIO = DataIO(folder_path=folder_path)
+        dataIO.save_data(file_name=file_name, data_dict_to_save = data_dict_to_save)
 
         saver = tf.train.Saver()
 
         saver.save(self.sess, folder_path + file_name + "_session")
 
 
-        print("{}: Saving complete".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving complete")
 
 
 
 
-    def loadModel(self, folder_path, file_name = None):
-
-        import pickle
+    def load_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Loading model from file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Loading model from file '{}'".format(folder_path + file_name))
 
-
-        data_dict = pickle.load(open(folder_path + file_name, "rb"))
+        dataIO = DataIO(folder_path=folder_path)
+        data_dict = dataIO.load_data(file_name=file_name)
 
         for attrib_name in data_dict.keys():
              self.__setattr__(attrib_name, data_dict[attrib_name])
@@ -314,7 +319,7 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
                            decay = self.decay,
                            batch_size = self.batch_size)
 
-        self.model.compute_eigenvalues(lamda=self.model_lamda, U = self.model_U)
+        self.model.compute_eigenvalues()
         self.model.build_graph()
 
 
@@ -325,5 +330,5 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
         saver.restore(self.sess, folder_path + file_name + "_session")
 
 
-        print("{}: Loading complete".format(self.RECOMMENDER_NAME))
+        self._print("Loading complete")
 

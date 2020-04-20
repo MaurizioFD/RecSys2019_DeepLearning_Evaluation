@@ -7,22 +7,23 @@ Created on 26/07/18
 """
 
 import scipy.sparse as sps
-import pickle, os
+import os
 
 from Conferences.SIGIR.CMN_github.util.data import Dataset
 
 from Data_manager.split_functions.split_train_validation import split_train_validation_leave_one_out_user_wise
-from Data_manager.load_and_save_data import save_data_dict, load_data_dict
+from Data_manager.load_and_save_data import save_data_dict_zip, load_data_dict_zip
 
 class CiteULikeReader(object):
 
-    def __init__(self):
+    URM_DICT = {}
+    ICM_DICT = {}
 
+    def __init__(self, pre_splitted_path):
         super(CiteULikeReader, self).__init__()
 
-        pre_splitted_path = "Data_manager_split_datasets/CiteULike/SIGIR/CMN_our_interface/"
-
-        pre_splitted_filename = "splitted_data"
+        pre_splitted_path += "data_split/"
+        pre_splitted_filename = "splitted_data_"
 
         # If directory does not exist, create
         if not os.path.exists(pre_splitted_path):
@@ -32,7 +33,7 @@ class CiteULikeReader(object):
 
             print("CiteULikeReader: Attempting to load pre-splitted data")
 
-            for attrib_name, attrib_object in load_data_dict(pre_splitted_path, pre_splitted_filename).items():
+            for attrib_name, attrib_object in load_data_dict_zip(pre_splitted_path, pre_splitted_filename).items():
                  self.__setattr__(attrib_name, attrib_object)
 
 
@@ -44,24 +45,22 @@ class CiteULikeReader(object):
 
             filename = "Conferences/SIGIR/CMN_github/data/citeulike-a.npz"
 
-            self.URM_train_original, self.URM_test, self.URM_test_negative = self.build_sparse_matrix(filename)
+            URM_train_original, URM_test, URM_test_negative = self.build_sparse_matrix(filename)
 
-            self.URM_train, self.URM_validation = split_train_validation_leave_one_out_user_wise(self.URM_train_original.copy())
+            URM_train, URM_validation = split_train_validation_leave_one_out_user_wise(URM_train_original.copy())
 
 
-            data_dict = {
-                "URM_train_original": self.URM_train_original,
-                "URM_train": self.URM_train,
-                "URM_test": self.URM_test,
-                "URM_test_negative": self.URM_test_negative,
-                "URM_validation": self.URM_validation,
+            self.URM_DICT = {
+                "URM_train_original": URM_train_original,
+                "URM_train": URM_train,
+                "URM_test": URM_test,
+                "URM_test_negative": URM_test_negative,
+                "URM_validation": URM_validation,
 
             }
 
-            save_data_dict(data_dict, pre_splitted_path, pre_splitted_filename)
+            save_data_dict_zip(self.URM_DICT, self.ICM_DICT, pre_splitted_path, pre_splitted_filename)
 
-
-        print("N_items {}, n_users {}".format(self.URM_train.shape[1], self.URM_train.shape[0]))
 
         print("CiteULikeReader: Dataset loaded")
 

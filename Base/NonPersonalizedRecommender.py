@@ -8,8 +8,7 @@
 import numpy as np
 from Base.BaseRecommender import BaseRecommender
 from Base.Recommender_utils import check_matrix
-
-import pickle
+from Base.DataIO import DataIO
 
 
 class TopPop(BaseRecommender):
@@ -38,26 +37,25 @@ class TopPop(BaseRecommender):
         else:
             item_pop_to_copy = self.item_pop.copy()
 
-        scores_batch = np.array(item_pop_to_copy, dtype=np.float32).reshape((1, -1))
-        scores_batch = np.repeat(scores_batch, len(user_id_array), axis = 0)
+        item_scores = np.array(item_pop_to_copy, dtype=np.float32).reshape((1, -1))
+        item_scores = np.repeat(item_scores, len(user_id_array), axis = 0)
 
-        return scores_batch
+        return item_scores
 
 
-    def saveModel(self, folder_path, file_name = None):
+    def save_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Saving model in file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving model in file '{}'".format(folder_path + file_name))
 
-        dictionary_to_save = {"item_pop": self.item_pop}
+        data_dict_to_save = {"item_pop": self.item_pop}
 
-        pickle.dump(dictionary_to_save,
-                    open(folder_path + file_name, "wb"),
-                    protocol=pickle.HIGHEST_PROTOCOL)
+        dataIO = DataIO(folder_path=folder_path)
+        dataIO.save_data(file_name=file_name, data_dict_to_save = data_dict_to_save)
 
-        print("{}: Saving complete".format(self.RECOMMENDER_NAME))
+        self._print("Saving complete")
 
 
 
@@ -115,7 +113,6 @@ class GlobalEffects(BaseRecommender):
         # the global average and user bias won't change the ranking, so there is no need to use them
         #self.item_ranking = np.argsort(self.bi)[::-1]
 
-
         self.URM_train = check_matrix(self.URM_train, 'csr', dtype=np.float32)
 
 
@@ -129,26 +126,25 @@ class GlobalEffects(BaseRecommender):
         else:
             item_bias_to_copy = self.item_bias.copy()
 
-        scores_batch = np.array(item_bias_to_copy, dtype=np.float).reshape((1, -1))
-        scores_batch = np.repeat(scores_batch, len(user_id_array), axis = 0)
+        item_scores = np.array(item_bias_to_copy, dtype=np.float).reshape((1, -1))
+        item_scores = np.repeat(item_scores, len(user_id_array), axis = 0)
 
-        return scores_batch
+        return item_scores
 
 
-    def saveModel(self, folder_path, file_name = None):
+    def save_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Saving model in file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving model in file '{}'".format(folder_path + file_name))
 
-        dictionary_to_save = {"item_bias": self.item_bias}
+        data_dict_to_save = {"item_bias": self.item_bias}
 
-        pickle.dump(dictionary_to_save,
-                    open(folder_path + file_name, "wb"),
-                    protocol=pickle.HIGHEST_PROTOCOL)
+        dataIO = DataIO(folder_path=folder_path)
+        dataIO.save_data(file_name=file_name, data_dict_to_save = data_dict_to_save)
 
-        print("{}: Saving complete".format(self.RECOMMENDER_NAME))
+        self._print("Saving complete")
 
 
 
@@ -171,29 +167,27 @@ class Random(BaseRecommender):
         # Create a random block (len(user_id_array), n_items) array with the item score
 
         if items_to_compute is not None:
-            scores_batch = - np.ones((len(user_id_array), self.n_items), dtype=np.float32)*np.inf
-            scores_batch[:, items_to_compute] = np.random.rand(len(user_id_array), len(items_to_compute))
+            item_scores = - np.ones((len(user_id_array), self.n_items), dtype=np.float32)*np.inf
+            item_scores[:, items_to_compute] = np.random.rand(len(user_id_array), len(items_to_compute))
 
         else:
-            scores_batch = np.random.rand(len(user_id_array), self.n_items)
+            item_scores = np.random.rand(len(user_id_array), self.n_items)
 
-        return scores_batch
+        return item_scores
 
 
 
-    def saveModel(self, folder_path, file_name = None):
+    def save_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Saving model in file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving model in file '{}'".format(folder_path + file_name))
 
-        dictionary_to_save = {}
+        data_dict_to_save = {}
 
-        pickle.dump(dictionary_to_save,
-                    open(folder_path + file_name, "wb"),
-                    protocol=pickle.HIGHEST_PROTOCOL)
+        dataIO = DataIO(folder_path=folder_path)
+        dataIO.save_data(file_name=file_name, data_dict_to_save = data_dict_to_save)
 
-
-        print("{}: Saving complete".format(self.RECOMMENDER_NAME))
+        self._print("Saving complete")
 

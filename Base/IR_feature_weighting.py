@@ -22,6 +22,10 @@ def okapi_BM_25(dataMatrix, K1=1.2, B=0.75):
     assert B>0 and B<1, "okapi_BM_25: B must be in (0,1)"
     assert K1>0,        "okapi_BM_25: K1 must be > 0"
 
+    assert np.all(np.isfinite(dataMatrix.data)), \
+        "okapi_BM_25: Data matrix contains {} non finite values".format(np.sum(np.logical_not(np.isfinite(dataMatrix.data))))
+
+
 
     # Weighs each row of a sparse matrix by OkapiBM25 weighting
     # calculate idf per term (user)
@@ -38,7 +42,10 @@ def okapi_BM_25(dataMatrix, K1=1.2, B=0.75):
     length_norm = (1.0 - B) + B * row_sums / average_length
 
     # weight matrix rows by bm25
-    dataMatrix.data = dataMatrix.data * (K1 + 1.0) / (K1 * length_norm[dataMatrix.row] + dataMatrix.data) * idf[dataMatrix.col]
+    denominator = K1 * length_norm[dataMatrix.row] + dataMatrix.data
+    denominator[denominator == 0.0] += 1e-9
+
+    dataMatrix.data = dataMatrix.data * (K1 + 1.0) / denominator * idf[dataMatrix.col]
 
     return dataMatrix.tocsr()
 
@@ -51,6 +58,12 @@ def TF_IDF(dataMatrix):
     :param dataMatrix:
     :return:
     """
+
+    assert np.all(np.isfinite(dataMatrix.data)), \
+        "TF_IDF: Data matrix contains {} non finite values.".format(np.sum(np.logical_not(np.isfinite(dataMatrix.data))))
+
+    assert np.all(dataMatrix.data >= 0.0),\
+        "TF_IDF: Data matrix contains {} negative values, computing the square root is not possible.".format(np.sum(dataMatrix.data < 0.0))
 
     # TFIDF each row of a sparse amtrix
     dataMatrix = sps.coo_matrix(dataMatrix)

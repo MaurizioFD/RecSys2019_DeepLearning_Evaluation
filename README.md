@@ -1,10 +1,10 @@
-# RecSys 2019 - DeepLearning RS Evaluation
+# DeepLearning RS Evaluation
 
 This is the repository of our article RecSys 2019 "Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches".
 The full text of the article is freely available on [ACM Digital Library](https://dl.acm.org/authorize?N684126), [ResearchGate](https://www.researchgate.net/publication/334506947_Are_We_Really_Making_Much_Progress_A_Worrying_Analysis_of_Recent_Neural_Recommendation_Approaches) or [ArXiv](https://arxiv.org/abs/1907.06902), source code of our experiments and full results are available [here](https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation).
 The [slides](Slides/RecSys2019_DeepLearning_Evaluation_Slides.pdf) and [poster](Slides/RecSys2019_DeepLearning_Evaluation_Poster.pdf) are also available.
 
-**NEWS: The preprint of the extended version of this paper (still under review) is now available on [ArXiv](https://arxiv.org/abs/1911.07698) "A Troubling Analysis of Reproducibility and Progress in Recommender Systems Research". We welcome your feedback!**
+**NEWS: The repository also includes the results of the extended version of the RecSys 2019 paper (still under review) is now available on [ArXiv](https://arxiv.org/abs/1911.07698) "A Troubling Analysis of Reproducibility and Progress in Recommender Systems Research". We welcome your feedback!**
 
 We are still actively pursuing this research direction in evaluation and reproducibility, we are open to collaboration with other reseachers. Follow our project on [ResearchGate](https://www.researchgate.net/project/Recommender-systems-reproducibility-and-evaluation)!
 
@@ -26,7 +26,7 @@ note={Source: \url{https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluat
 
 
 ## Full results and hyperparameters
-The full results and corresponding hyperparameters for all DL algorithms are accessible [HERE](FULL_RESULTS.md).
+The full results and corresponding hyperparameters for all DL algorithms are accessible [HERE](DL_Evaluation_TOIS_Additional_material.pdf).
 For information on the requirements and how to install this repository, see the following [Installation](#Installation) section.
 
 
@@ -36,13 +36,35 @@ This repository is organized in several subfolders.
 #### Deep Learning Algorithms
 The Deep Learning algorithms are all contained in the _Conferences_ folder and further divided in the conferences they were published in.
 For each DL algorithm the repository contains two subfolders:
-* A folder named "_github" which contains the full original repository, with the minor fixes needed for the code to run.
-* A folder named "_our_interface" which contains the python wrappers needed to allow its testing in our framework. The main class for that algorithm has the "Wrapper" suffix in its name. This folder also contain the functions needed to read and split the data in the appropriate way.
+* A folder named "_github" which contains the full original repository or "_original" which contains the source code provided by the authors upon request, with the minor fixes needed for the code to run.
+* A folder named "_our_interface" which contains the python wrappers needed to allow its testing in our framework. The main class for that algorithm has the "Wrapper" suffix in its name. This folder also contains the functions needed to read and split the data in the appropriate way.
 
-Note that in some cases the original repository contained also the data split used by the original authors, that is included as well.
+Note that in some cases the original repository contained also the data split used by the original authors, those are included as well.
 
 #### Baseline algorithms
-Other folders like KNN and GraphBased contain all the baseline algorithms we have used in our experiments.
+Folders like "KNN", "GraphBased", "MatrixFactorization", "SLIM_BPR", "SLIM_ElasticNet" and "EASE_R" contain all the baseline algorithms we used in our experiments.
+The complete list is as follows, details on all algorithms and references can be found [HERE](DL_Evaluation_TOIS_Additional_material.pdf):
+* Random: recommends a list of random items,
+* TopPop: recommends the most popular items,
+* UserKNN: User-based collaborative KNN,
+* ItemKNN: Item-based collaborative KNN,
+* UserKNN CBF: User-based content-based KNN,
+* ItemKNN CBF: Item-based content-based KNN,
+* UserKNN CFCBF: User-based hybrid content-based collaborative KNN,
+* ItemKNN CFCBF: Item-based hybrid content-based collaborative KNN,
+* P3alpha: collaborative graph-based algorithm,
+* RP3beta: collaborative graph-based algorithm with reranking,
+* PureSVD: SVD decomposition of the user-item matrix,
+* NMF: Non-negative matrix factorization of the user-item matrix,
+* IALS: Implicit alternating least squares,
+* MatrixFactorization BPR (BPRMF): machine learning based matrix factorization optimizing ranking with BPR,
+* MatrixFactorization FunkSVD: machine learning based matrix factorization optimizing prediction accuracy with MSE,
+* EASE_R: collaborative shallow autoencoder,
+* SLIM BPR: Item-based machine learning algorithm optimizing ranking with BPR,
+* SLIM ElasticNet: Item-based machine learning algorithm optimizing prediction accuracy with MSE.
+
+The following similarities are available for all KNN models: cosine, adjusted cosine, pearson correlation, dice, jaccard, asymmetric cosine, tversky, euclidean
+
 
 #### Evaluation
 The folder _Base.Evaluation_ contains the two evaluator objects (_EvaluatorHoldout_, _EvaluatorNegativeSample_) which compute all the metrics we report.
@@ -50,10 +72,11 @@ The folder _Base.Evaluation_ contains the two evaluator objects (_EvaluatorHoldo
 #### Data
 The data to be used for each experiments is gathered from specific _DataReader_ objects withing each DL algoritm's folder. 
 Those will load the original data split, if available. If not, automatically download the dataset and perform the split with the appropriate methodology. If the dataset cannot be downloaded automatically, a console message will display the link at which the dataset can be manually downloaded and instructions on where the user should save the compressed file.
+The data of ConvNCF cannot be automatically handled and should be manually downloaded [HERE](https://polimi365-my.sharepoint.com/:u:/g/personal/10322330_polimi_it/EbAK6lYNM6NMh-b5tDUDC-kBxGLQkLmQYm0dXWuHaykQrQ?e=IOzbTW) and decompressed in folder "Conferences/IJCAI/ConvNCF_github/Data". 
 
 The folder _Data_manager_ contains a number of _DataReader_ objects each associated to a specific dataset, which are used to read datasets for which we did not have the original split. 
 
-Whenever a new dataset is parsed, the preprocessed data is saved in a new folder called _Data_manager_split_datasets_, which contains a subfolder for each dataset and then a subfolder for each conference.
+Whenever a new dataset is downloaded and parsed, the preprocessed data is saved in a new folder called _Data_manager_split_datasets_, which contains a subfolder for each dataset. The data split used for the experimental evaluation is saved within the result folder for the relevant algorithm, in a subfolder _data_ . 
 
 #### Hyperparameter optimization
 Folder _ParameterTuning_ contains all the code required to tune the hyperparameters of the baselines. The script _run_parameter_search_ contains the fixed hyperparameters search space used in all our experiments.
@@ -69,10 +92,18 @@ After the installation is complete you can run the experiments.
 
 
 All experiments related to a DL algorithm reported in our paper can be executed by running the corresponding script, which is preceeded by _run__, the conference name and the year of publication.
-For example, if you want to run the experiments for SpectralCF, you should run this command:
-```Python
-python run_RecSys_18_SpectralCF.py
+The scripts have the following boolean optional parameters (all default values are False except for the print-results flag):
+* '-b' or '--baseline_tune': Run baseline hyperparameter search
+* '-a' or '--DL_article_default': Train the deep learning algorithm with the original hyperparameters
+* '-p' or '--print_results': Generate the latex tables for this experiment
+
+
+For example, if you want to run all the experiments for SpectralCF, you should run this command:
+```console
+python run_RecSys_18_SpectralCF.py -b True -a True -p True
 ```
+
+
 
 The script will:
 * Load and split the data.
@@ -95,31 +126,47 @@ First we suggest you create an environment for this project using virtualenv (or
 First checkout this repository, then enter in the repository folder and run this commands to create and activate a new environment:
 
 If you are using virtualenv:
-```Python
+```console
 virtualenv -p python3 DLevaluation
 source DLevaluation/bin/activate
 ```
 If you are using conda:
-```Python
+```console
 conda create -n DLevaluation python=3.6 anaconda
-source activate DLevaluation
+conda activate DLevaluation
 ```
 
-Then install all the requirements and dependencies
-```Python
+Then if you want to run the experiments on CPU you should install all the requirements and dependencies using the following command. If you wish a GPU installation please install the dependencies as described in subsection [Installation on GPU](#Installation-on-GPU).
+```console
 pip install -r requirements.txt
 ```
 
-In order to compile you must have installed: _gcc_ and _python3 dev_, which can be installed with the following commands:
-```Python
+At this point, having installed all dependencies for either CPU or GPU usage, you have to compile all Cython algorithms.
+
+In order to compile you must first have installed: _gcc_ and _python3 dev_. Under Linux those can be installed with the following commands:
+```console
 sudo apt install gcc 
 sudo apt-get install python3-dev
 ```
+If you are using Windows as operating system, the installation procedure is a bit more complex. You may refer to [THIS](https://github.com/cython/cython/wiki/InstallingOnWindows) guide.
 
-At this point you can compile all Cython algorithms by running the following command. The script will compile within the current active environment. The code has been developed for Linux and Windows platforms. During the compilation you may see some warnings. 
+Now you can compile all Cython algorithms by running the following command. The script will compile within the current active environment. The code has been developed for Linux and Windows platforms. During the compilation you may see some warnings. 
  
-```Python
+```console
 python run_compile_all_cython.py
+```
+
+
+#### Installation on GPU
+In order to run the experiments on GPU you should install requirements and dependencies in the following way. 
+This commands only work if you are using conda to manage your virtual environment. 
+It is possible to install them using other tools or pip but it may prove to be a much more complex task.
+```console
+conda install tensorflow-gpu
+conda install -c anaconda keras-gpu
+conda install -c hcc dm-sonnet-gpu
+
+pip install -r requirements_gpu.txt
 ```
 
 ### Matlab engine

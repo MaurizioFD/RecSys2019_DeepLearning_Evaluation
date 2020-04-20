@@ -9,7 +9,7 @@ Created on 16/09/2017
 from Base.BaseRecommender import BaseRecommender
 from KNN.ItemKNNCustomSimilarityRecommender import ItemKNNCustomSimilarityRecommender
 from Base.Recommender_utils import check_matrix
-import pickle
+from Base.DataIO import DataIO
 import numpy as np
 import scipy.sparse as sps
 
@@ -81,20 +81,15 @@ class BaseMatrixFactorizationRecommender(BaseRecommender):
     The prediction for cold users will always be -inf for ALL items
     """
 
-    def __init__(self, URM_train):
-        super(BaseMatrixFactorizationRecommender, self).__init__(URM_train)
+    def __init__(self, URM_train, verbose=True):
+        super(BaseMatrixFactorizationRecommender, self).__init__(URM_train, verbose=verbose)
 
-        self._cold_user_mask = np.ediff1d(self.URM_train.indptr) == 0
-        self._cold_user_KNN_model_available = False
-        self._warm_user_KNN_mask = np.zeros(len(self._cold_user_mask), dtype=np.bool)
+        self.use_bias = False
 
-        if self._cold_user_mask.any():
-            print("{}: Detected {} ({:.2f} %) cold users.".format(
-                self.RECOMMENDER_NAME, self._cold_user_mask.sum(), self._cold_user_mask.sum()/len(self._cold_user_mask)*100))
+        self._cold_user_KNN_model_flag = False
+        self._cold_user_KNN_estimated_factors_flag = False
+        self._warm_user_KNN_mask = np.zeros(len(self._get_cold_user_mask()), dtype=np.bool)
 
-
-    def _get_cold_user_mask(self):
-        return self._cold_user_mask
 
 
     def set_URM_train(self, URM_train_new, estimate_model_for_cold_users = False, topK = 100, **kwargs):
@@ -110,47 +105,56 @@ class BaseMatrixFactorizationRecommender(BaseRecommender):
         assert self.URM_train.shape == URM_train_new.shape, "{}: set_URM_train old and new URM train have different shapes".format(self.RECOMMENDER_NAME)
 
         if len(kwargs)>0:
-            print("{}: set_URM_train keyword arguments not supported for this recommender class. Received: {}".format(self.RECOMMENDER_NAME, kwargs))
+            self._print("set_URM_train keyword arguments not supported for this recommender class. Received: {}".format(kwargs))
 
-        self.URM_train = check_matrix(URM_train_new.copy(), 'csr', dtype=np.float32)
-        self.URM_train.eliminate_zeros()
+        URM_train_new = check_matrix(URM_train_new, 'csr', dtype=np.float32)
+        profile_length_new = np.ediff1d(URM_train_new.indptr)
 
         if estimate_model_for_cold_users == "itemKNN":
 
-            print("{}: Estimating ItemKNN model from ITEM latent factors...".format(self.RECOMMENDER_NAME))
+            self._print("Estimating ItemKNN model from ITEM latent factors...")
 
             W_sparse = compute_W_sparse_from_item_latent_factors(self.ITEM_factors, topK=topK)
 
-            self._ItemKNNRecommender = ItemKNNCustomSimilarityRecommender(self.URM_train)
+            self._ItemKNNRecommender = ItemKNNCustomSimilarityRecommender(URM_train_new)
             self._ItemKNNRecommender.fit(W_sparse, topK=topK)
+            self._ItemKNNRecommender_topK = topK
 
-            self._cold_user_KNN_model_available = True
-            self._warm_user_KNN_mask = np.ediff1d(self.URM_train.indptr) > 0
+            self._cold_user_KNN_model_flag = True
+            self._warm_user_KNN_mask = profile_length_new > 0
 
-            print("{}: Estimating ItemKNN model from ITEM latent factors... done!".format(self.RECOMMENDER_NAME))
+            self._print("Estimating ItemKNN model from ITEM latent factors... done!")
 
 
 
         elif estimate_model_for_cold_users == "mean_item_factors":
 
-            print("{}: Estimating USER latent factors from ITEM latent factors...".format(self.RECOMMENDER_NAME))
+            self._print("Estimating USER latent factors from ITEM latent factors...")
 
-            self._cold_user_mask = np.ediff1d(self.URM_train.indptr) == 0
+            cold_user_mask_previous = self._get_cold_user_mask()
+            profile_length_sqrt = np.sqrt(profile_length_new)
 
-            profile_length = np.ediff1d(self.URM_train.indptr)
-            profile_length_sqrt = np.sqrt(profile_length)
-
-            self.USER_factors = self.URM_train.dot(self.ITEM_factors)
+            self.USER_factors[cold_user_mask_previous,:] = URM_train_new.dot(self.ITEM_factors)[cold_user_mask_previous,:]
+            self._cold_user_KNN_estimated_factors_flag = True
 
             #Divide every row for the sqrt of the profile length
             for user_index in range(self.n_users):
-
-                if profile_length_sqrt[user_index] > 0:
+                if cold_user_mask_previous[user_index] and profile_length_sqrt[user_index] > 0:
 
                     self.USER_factors[user_index, :] /= profile_length_sqrt[user_index]
 
-            print("{}: Estimating USER latent factors from ITEM latent factors... done!".format(self.RECOMMENDER_NAME))
+            self._print("Estimating USER latent factors from ITEM latent factors... done!")
 
+
+        self.URM_train = check_matrix(URM_train_new.copy(), 'csr', dtype=np.float32)
+        self.URM_train.eliminate_zeros()
+
+
+    #########################################################################################################
+    ##########                                                                                     ##########
+    ##########                               COMPUTE ITEM SCORES                                   ##########
+    ##########                                                                                     ##########
+    #########################################################################################################
 
 
     def _compute_item_score(self, user_id_array, items_to_compute = None):
@@ -168,53 +172,74 @@ class BaseMatrixFactorizationRecommender(BaseRecommender):
         assert self.USER_factors.shape[1] == self.ITEM_factors.shape[1], \
             "{}: User and Item factors have inconsistent shape".format(self.RECOMMENDER_NAME)
 
-        assert self.USER_factors.shape[0] > user_id_array.max(),\
+        assert self.USER_factors.shape[0] > np.max(user_id_array),\
                 "{}: Cold users not allowed. Users in trained model are {}, requested prediction for users up to {}".format(
-                self.RECOMMENDER_NAME, self.USER_factors.shape[0], user_id_array.max())
+                self.RECOMMENDER_NAME, self.USER_factors.shape[0], np.max(user_id_array))
 
         if items_to_compute is not None:
             item_scores = - np.ones((len(user_id_array), self.ITEM_factors.shape[0]), dtype=np.float32)*np.inf
             item_scores[:, items_to_compute] = np.dot(self.USER_factors[user_id_array], self.ITEM_factors[items_to_compute,:].T)
+
         else:
             item_scores = np.dot(self.USER_factors[user_id_array], self.ITEM_factors.T)
 
-        cold_users_MF_mask = self._get_cold_user_mask()[user_id_array]
 
-        if cold_users_MF_mask.any():
-
-            if self._cold_user_KNN_model_available:
-                # Add KNN scores for users cold for MF but warm in KNN model
-                cold_users_in_MF_warm_in_KNN_mask = np.logical_and(cold_users_MF_mask, self._warm_user_KNN_mask[user_id_array])
-
-                item_scores[cold_users_in_MF_warm_in_KNN_mask, :] = self._ItemKNNRecommender._compute_item_score(user_id_array[cold_users_in_MF_warm_in_KNN_mask], items_to_compute=items_to_compute)
-
-                # Set cold users as those neither in MF nor in KNN
-                cold_users_MF_mask = np.logical_and(cold_users_MF_mask, np.logical_not(cold_users_in_MF_warm_in_KNN_mask))
-
-            # Set as -inf all remaining cold user scores
-            item_scores[cold_users_MF_mask, :] = - np.ones_like(item_scores[cold_users_MF_mask, :]) * np.inf
+        # No need to select only the specific negative items or warm users because the -inf score will not change
+        if self.use_bias:
+            item_scores += self.ITEM_bias + self.GLOBAL_bias
+            item_scores = (item_scores.T + self.USER_bias[user_id_array]).T
 
         return item_scores
 
 
 
+    #########################################################################################################
+    ##########                                                                                     ##########
+    ##########                                LOAD AND SAVE                                        ##########
+    ##########                                                                                     ##########
+    #########################################################################################################
 
 
-    def saveModel(self, folder_path, file_name = None):
+
+    def save_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Saving model in file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving model in file '{}'".format(folder_path + file_name))
 
-        dictionary_to_save = {"USER_factors": self.USER_factors,
+        data_dict_to_save = {"USER_factors": self.USER_factors,
                               "ITEM_factors": self.ITEM_factors,
-                              "_cold_user_mask": self._cold_user_mask}
+                              "use_bias": self.use_bias,
+                              "_cold_user_mask": self._cold_user_mask,
+                              "_cold_user_KNN_model_flag": self._cold_user_KNN_model_flag,
+                              "_cold_user_KNN_estimated_factors_flag": self._cold_user_KNN_estimated_factors_flag}
+
+        if self.use_bias:
+            data_dict_to_save["ITEM_bias"] = self.ITEM_bias
+            data_dict_to_save["USER_bias"] = self.USER_bias
+            data_dict_to_save["GLOBAL_bias"] = self.GLOBAL_bias
+
+        if self._cold_user_KNN_model_flag:
+            data_dict_to_save["_ItemKNNRecommender_W_sparse"] = self._ItemKNNRecommender.W_sparse
+            data_dict_to_save["_ItemKNNRecommender_topK"] = self._ItemKNNRecommender_topK
 
 
-        pickle.dump(dictionary_to_save,
-                    open(folder_path + file_name, "wb"),
-                    protocol=pickle.HIGHEST_PROTOCOL)
+        dataIO = DataIO(folder_path=folder_path)
+        dataIO.save_data(file_name=file_name, data_dict_to_save = data_dict_to_save)
 
 
-        print("{}: Saving complete".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving complete")
+
+
+
+
+    def load_model(self, folder_path, file_name = None):
+        super(BaseMatrixFactorizationRecommender, self).load_model(folder_path, file_name = file_name)
+
+        if self._cold_user_KNN_model_flag:
+            self._ItemKNNRecommender = ItemKNNCustomSimilarityRecommender(self.URM_train)
+            self._ItemKNNRecommender.fit(self._ItemKNNRecommender_W_sparse, topK=self._ItemKNNRecommender_topK)
+
+            del self._ItemKNNRecommender_W_sparse
+            del self._ItemKNNRecommender_topK

@@ -28,7 +28,7 @@ ELSE:
 
 
 import time, sys
-
+import cython
 import numpy as np
 cimport numpy as np
 
@@ -42,7 +42,12 @@ from libc.math cimport sqrt
 import scipy.sparse as sps
 from Base.Recommender_utils import check_matrix
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+@cython.overflowcheck(False)
 cdef class Compute_Similarity_Cython:
 
     cdef int TopK
@@ -421,7 +426,7 @@ cdef class Compute_Similarity_Cython:
 
         # Declare numpy data type to use vetor indexing and simplify the topK selection code
         cdef np.ndarray[LONG_t, ndim=1] top_k_partition, top_k_partition_sorting
-        cdef np.ndarray[np.float64_t, ndim=1] this_item_weights_np
+        cdef np.ndarray[np.float64_t, ndim=1] this_item_weights_np = np.zeros(self.n_columns, dtype=np.float64)
         #cdef double[:] this_item_weights
 
         cdef long processedItems = 0
@@ -520,7 +525,9 @@ cdef class Compute_Similarity_Cython:
 
 
                 #this_item_weights_np = clone(template_zero, self.this_item_weights_counter, zero=False)
-                this_item_weights_np = np.zeros(self.n_columns, dtype=np.float64)
+                for innerItemIndex in range(self.n_columns):
+                    this_item_weights_np[innerItemIndex] = 0.0
+
 
                 # Add weights in the same ordering as the self.this_item_weights_id data structure
                 for innerItemIndex in range(self.this_item_weights_counter):

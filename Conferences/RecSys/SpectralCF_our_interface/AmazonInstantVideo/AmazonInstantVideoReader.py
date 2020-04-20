@@ -5,13 +5,13 @@
 @author: Simone Boglio
 """
 
-import os, pickle
+import os
 import pandas as pd
 import Data_manager.Utility as ut
 import numpy as np
 
-from Data_manager.DataReader_utils import downloadFromURL
-from Data_manager.load_and_save_data import save_data_dict, load_data_dict
+from Data_manager.DataReader_utils import download_from_URL
+from Data_manager.load_and_save_data import save_data_dict_zip, load_data_dict_zip
 
 
 from Data_manager.IncrementalSparseMatrix import IncrementalSparseMatrix
@@ -24,13 +24,17 @@ class AmazonInstantVideoReader:
     DATASET_SUBFOLDER = "AmazonInstantVideo/"
 
 
-    def __init__(self):
+    URM_DICT = {}
+    ICM_DICT = {}
+
+
+    def __init__(self, pre_splitted_path):
 
         test_percentage = 0.2
         validation_percentage = 0.2
 
-        pre_splitted_path = "Data_manager_split_datasets/AmazonInstantVideo/RecSys/SpectralCF_our_interface/"
-        pre_splitted_filename = "splitted_data"
+        pre_splitted_path += "data_split/"
+        pre_splitted_filename = "splitted_data_"
 
         ratings_file_name = "ratings_Amazon_Instant_Video.csv"
 
@@ -41,7 +45,7 @@ class AmazonInstantVideoReader:
         try:
             print("Dataset_AmazonInstantVideo: Attempting to load pre-splitted data")
 
-            for attrib_name, attrib_object in load_data_dict(pre_splitted_path, pre_splitted_filename).items():
+            for attrib_name, attrib_object in load_data_dict_zip(pre_splitted_path, pre_splitted_filename).items():
                  self.__setattr__(attrib_name, attrib_object)
 
 
@@ -51,7 +55,7 @@ class AmazonInstantVideoReader:
 
             folder_path = self.DATASET_SPLIT_ROOT_FOLDER + self.DATASET_SUBFOLDER
 
-            downloadFromURL(self.DATASET_URL, folder_path, ratings_file_name)
+            download_from_URL(self.DATASET_URL, folder_path, ratings_file_name)
 
             # read Amazon Instant Video
             df = pd.read_csv(folder_path + ratings_file_name, sep=',', header=None, names=['user', 'item', 'rating', 'timestamp'])[
@@ -70,17 +74,17 @@ class AmazonInstantVideoReader:
 
             # create train - test - validation
 
-            URM_train_original, self.URM_test = split_train_validation_percentage_user_wise(URM_all, train_percentage=1-test_percentage, verbose=False)
+            URM_train_original, URM_test = split_train_validation_percentage_user_wise(URM_all, train_percentage=1-test_percentage, verbose=False)
 
-            self.URM_train, self.URM_validation = split_train_validation_percentage_user_wise(URM_train_original, train_percentage=1-validation_percentage, verbose=False)
+            URM_train, URM_validation = split_train_validation_percentage_user_wise(URM_train_original, train_percentage=1-validation_percentage, verbose=False)
 
-            data_dict = {
-                "URM_train": self.URM_train,
-                "URM_test": self.URM_test,
-                "URM_validation": self.URM_validation,
+            self.URM_DICT = {
+                "URM_train": URM_train,
+                "URM_test": URM_test,
+                "URM_validation": URM_validation,
             }
 
-            save_data_dict(data_dict, pre_splitted_path, pre_splitted_filename)
+            save_data_dict_zip(self.URM_DICT, self.ICM_DICT, pre_splitted_path, pre_splitted_filename)
 
 
 

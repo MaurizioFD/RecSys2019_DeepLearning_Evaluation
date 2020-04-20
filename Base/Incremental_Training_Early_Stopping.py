@@ -7,9 +7,9 @@ Created on 06/07/2018
 """
 
 import time, sys
+import numpy as np
+from Base.BaseTempFolder import BaseTempFolder
 from Utils.seconds_to_biggest_unit import seconds_to_biggest_unit
-
-
 
 
 class Incremental_Training_Early_Stopping(object):
@@ -50,7 +50,6 @@ class Incremental_Training_Early_Stopping(object):
         """
 
         return {"epochs": self.epochs_best}
-
 
 
     def _run_epoch(self, num_epoch):
@@ -148,7 +147,7 @@ class Incremental_Training_Early_Stopping(object):
 
         """
 
-        assert epochs_max > 0, "{}: Number of epochs_max must be > 0, passed was {}".format(algorithm_name, epochs_max)
+        assert epochs_max >= 0, "{}: Number of epochs_max must be >= 0, passed was {}".format(algorithm_name, epochs_max)
         assert epochs_min >= 0, "{}: Number of epochs_min must be >= 0, passed was {}".format(algorithm_name, epochs_min)
         assert epochs_min <= epochs_max, "{}: epochs_min must be <= epochs_max, passed are epochs_min {}, epochs_max {}".format(algorithm_name, epochs_min, epochs_max)
 
@@ -198,6 +197,14 @@ class Incremental_Training_Early_Stopping(object):
                 # Update optimal model
                 current_metric_value = results_run[validation_metric]
 
+                if not np.isfinite(current_metric_value):
+                    if isinstance(self, BaseTempFolder):
+                        # If the recommender uses BaseTempFolder, clean the temp folder
+                        self._clean_temp_folder(temp_file_folder=self.temp_file_folder)
+
+                    assert False, "{}: metric value is not a finite number, terminating!".format(self.RECOMMENDER_NAME)
+
+
                 if self.best_validation_metric is None or self.best_validation_metric < current_metric_value:
 
                     print("{}: New best model found! Updating.".format(algorithm_name))
@@ -246,7 +253,7 @@ class Incremental_Training_Early_Stopping(object):
             elapsed_time = time.time() - start_time
             new_time_value, new_time_unit = seconds_to_biggest_unit(elapsed_time)
 
-            if evaluator_object is not None:
+            if evaluator_object is not None and self.best_validation_metric is not None:
                 print("{}: Terminating at epoch {}. Best value for '{}' at epoch {} is {:.4f}. Elapsed time {:.2f} {}".format(
                     algorithm_name, epochs_current, validation_metric, self.epochs_best, self.best_validation_metric, new_time_value, new_time_unit))
             else:

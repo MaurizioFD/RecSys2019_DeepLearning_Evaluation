@@ -9,10 +9,10 @@ Created on 23/10/17
 
 import numpy as np
 from Base.Recommender_utils import check_matrix, similarityMatrixTopK
-from Base.BaseSimilarityMatrixRecommender import BaseSimilarityMatrixRecommender
+from Base.BaseSimilarityMatrixRecommender import BaseItemSimilarityMatrixRecommender
 
 
-class ItemKNNCustomSimilarityRecommender(BaseSimilarityMatrixRecommender):
+class ItemKNNCustomSimilarityRecommender(BaseItemSimilarityMatrixRecommender):
     """ ItemKNN recommender"""
 
     RECOMMENDER_NAME = "ItemKNNCustomSimilarityRecommender"

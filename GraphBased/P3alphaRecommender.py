@@ -10,19 +10,19 @@ import scipy.sparse as sps
 from sklearn.preprocessing import normalize
 from Base.Recommender_utils import check_matrix, similarityMatrixTopK
 
-from Base.BaseSimilarityMatrixRecommender import BaseSimilarityMatrixRecommender
+from Base.BaseSimilarityMatrixRecommender import BaseItemSimilarityMatrixRecommender
 import time, sys
 
 
 
 
-class P3alphaRecommender(BaseSimilarityMatrixRecommender):
+class P3alphaRecommender(BaseItemSimilarityMatrixRecommender):
     """ P3alpha recommender """
 
     RECOMMENDER_NAME = "P3alphaRecommender"
 
-    def __init__(self, URM_train):
-        super(P3alphaRecommender, self).__init__(URM_train)
+    def __init__(self, URM_train, verbose = True):
+        super(P3alphaRecommender, self).__init__(URM_train, verbose = verbose)
 
 
     def __str__(self):
@@ -117,7 +117,7 @@ class P3alphaRecommender(BaseSimilarityMatrixRecommender):
 
 
             if time.time() - start_time_printBatch > 60:
-                print("Processed {} ( {:.2f}% ) in {:.2f} minutes. Rows per second: {:.0f}".format(
+                self._print("Processed {} ( {:.2f}% ) in {:.2f} minutes. Rows per second: {:.0f}".format(
                     current_block_start_row,
                     100.0 * float(current_block_start_row) / Pui.shape[1],
                     (time.time() - start_time) / 60,

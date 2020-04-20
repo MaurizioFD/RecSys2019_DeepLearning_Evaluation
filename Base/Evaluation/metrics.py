@@ -8,79 +8,35 @@
 
 import numpy as np
 import unittest
+import scipy.sparse as sps
 
-class Metrics_Object(object):
+
+class _Metrics_Object(object):
     """
     Abstract class that should be used as superclass of all metrics requiring an object, therefore a state, to be computed
     """
     def __init__(self):
         pass
 
-    def add_recommendations(self, recommended_items_ids):
-        raise NotImplementedError()
-
-    def get_metric_value(self):
-        raise NotImplementedError()
-
-    def merge_with_other(self, other_metric_object):
-        raise NotImplementedError()
-
-
-
-class Coverage_Item(Metrics_Object):
-    """
-    Item coverage represents the percentage of the overall items which were recommended
-    https://gab41.lab41.org/recommender-systems-its-not-all-about-the-accuracy-562c7dceeaff
-    """
-
-    def __init__(self, n_items, ignore_items):
-        super(Coverage_Item, self).__init__()
-        self.recommended_mask = np.zeros(n_items, dtype=np.bool)
-        self.n_ignore_items = len(ignore_items)
+    def __str__(self):
+        return "{:.4f}".format(self.get_metric_value())
 
     def add_recommendations(self, recommended_items_ids):
-        if len(recommended_items_ids) > 0:
-            self.recommended_mask[recommended_items_ids] = True
+        raise NotImplementedError()
 
     def get_metric_value(self):
-        return self.recommended_mask.sum()/(len(self.recommended_mask)-self.n_ignore_items)
-
-
-    def merge_with_other(self, other_metric_object):
-        assert other_metric_object is Coverage_Item, "Coverage_Item: attempting to merge with a metric object of different type"
-
-        self.recommended_mask = np.logical_or(self.recommended_mask, other_metric_object.recommended_mask)
-
-
-
-
-class Coverage_User(Metrics_Object):
-    """
-    User coverage represents the percentage of the overall users for which we can make recommendations.
-    If there is at least one recommendation the user is considered as covered
-    https://gab41.lab41.org/recommender-systems-its-not-all-about-the-accuracy-562c7dceeaff
-    """
-
-    def __init__(self, n_users, ignore_users):
-        super(Coverage_User, self).__init__()
-        self.users_mask = np.zeros(n_users, dtype=np.bool)
-        self.n_ignore_users = len(ignore_users)
-
-    def add_recommendations(self, recommended_items_ids, user_id):
-        self.users_mask[user_id] = len(recommended_items_ids)>0
-
-    def get_metric_value(self):
-        return self.users_mask.sum()/(len(self.users_mask)-self.n_ignore_users)
+        raise NotImplementedError()
 
     def merge_with_other(self, other_metric_object):
-        assert other_metric_object is Coverage_User, "Coverage_User: attempting to merge with a metric object of different type"
-
-        self.users_mask = np.logical_or(self.users_mask, other_metric_object.users_mask)
+        raise NotImplementedError()
 
 
+####################################################################################################################
+###############                 ACCURACY METRICS
+####################################################################################################################
 
 
-class MAP(Metrics_Object):
+class MAP(_Metrics_Object):
     """
     Mean Average Precision, defined as the mean of the AveragePrecision over all users
 
@@ -106,9 +62,19 @@ class MAP(Metrics_Object):
 
 
 
+def average_precision(is_relevant, pos_items):
+
+    if len(is_relevant) == 0:
+        a_p = 0.0
+    else:
+        p_at_k = is_relevant * np.cumsum(is_relevant, dtype=np.float32) / (1 + np.arange(is_relevant.shape[0]))
+        a_p = np.sum(p_at_k) / np.min([pos_items.shape[0], is_relevant.shape[0]])
+
+    assert 0 <= a_p <= 1, a_p
+    return a_p
 
 
-class MRR(Metrics_Object):
+class MRR(_Metrics_Object):
     """
     Mean Reciprocal Rank, defined as the mean of the Reciprocal Rank over all users
 
@@ -133,10 +99,305 @@ class MRR(Metrics_Object):
         self.n_users += other_metric_object.n_users
 
 
+def roc_auc(is_relevant):
+
+    ranks = np.arange(len(is_relevant))
+    pos_ranks = ranks[is_relevant]
+    neg_ranks = ranks[~is_relevant]
+    auc_score = 0.0
+
+    if len(neg_ranks) == 0:
+        return 1.0
+
+    if len(pos_ranks) > 0:
+        for pos_pred in pos_ranks:
+            auc_score += np.sum(pos_pred < neg_ranks, dtype=np.float32)
+        auc_score /= (pos_ranks.shape[0] * neg_ranks.shape[0])
+
+    assert 0 <= auc_score <= 1, auc_score
+    return auc_score
 
 
 
-class Gini_Diversity(Metrics_Object):
+def arhr(is_relevant):
+    # average reciprocal hit-rank (ARHR) of all relevant items
+    # As opposed to MRR, ARHR takes into account all relevant items and not just the first
+    # pag 17
+    # http://glaros.dtc.umn.edu/gkhome/fetch/papers/itemrsTOIS04.pdf
+    # https://emunix.emich.edu/~sverdlik/COSC562/ItemBasedTopTen.pdf
+
+    p_reciprocal = 1/np.arange(1,len(is_relevant)+1, 1.0, dtype=np.float64)
+    arhr_score = is_relevant.dot(p_reciprocal)
+
+    assert not np.isnan(arhr_score), "ARHR is NaN"
+    return arhr_score
+
+
+def precision(is_relevant):
+
+    if len(is_relevant) == 0:
+        precision_score = 0.0
+    else:
+        precision_score = np.sum(is_relevant, dtype=np.float32) / len(is_relevant)
+
+    assert 0 <= precision_score <= 1, precision_score
+    return precision_score
+
+
+def precision_recall_min_denominator(is_relevant, n_test_items):
+
+    if len(is_relevant) == 0:
+        precision_score = 0.0
+    else:
+        precision_score = np.sum(is_relevant, dtype=np.float32) / min(n_test_items, len(is_relevant))
+
+    assert 0 <= precision_score <= 1, precision_score
+    return precision_score
+
+
+
+def recall(is_relevant, pos_items):
+
+    recall_score = np.sum(is_relevant, dtype=np.float32) / pos_items.shape[0]
+
+    assert 0 <= recall_score <= 1, recall_score
+    return recall_score
+
+
+def rr(is_relevant):
+    # reciprocal rank of the FIRST relevant item in the ranked list (0 if none)
+
+    ranks = np.arange(1, len(is_relevant) + 1)[is_relevant]
+
+    if len(ranks) > 0:
+        return 1. / ranks[0]
+    else:
+        return 0.0
+
+
+
+
+def ndcg(ranked_list, pos_items, relevance=None, at=None):
+
+    if relevance is None:
+        relevance = np.ones_like(pos_items)
+    assert len(relevance) == pos_items.shape[0]
+
+    # Create a dictionary associating item_id to its relevance
+    # it2rel[item] -> relevance[item]
+    it2rel = {it: r for it, r in zip(pos_items, relevance)}
+
+    # Creates array of length "at" with the relevance associated to the item in that position
+    rank_scores = np.asarray([it2rel.get(it, 0.0) for it in ranked_list[:at]], dtype=np.float32)
+
+    # IDCG has all relevances to 1, up to the number of items in the test set
+    ideal_dcg = dcg(np.sort(relevance)[::-1])
+
+    # DCG uses the relevance of the recommended items
+    rank_dcg = dcg(rank_scores)
+
+    if rank_dcg == 0.0:
+        return 0.0
+
+    ndcg_ = rank_dcg / ideal_dcg
+
+    return ndcg_
+
+
+def dcg(scores):
+    return np.sum(np.divide(np.power(2, scores) - 1, np.log(np.arange(scores.shape[0], dtype=np.float32) + 2)),
+                  dtype=np.float32)
+
+
+
+####################################################################################################################
+###############                 ERROR METRICS
+####################################################################################################################
+
+class RMSE(_Metrics_Object):
+    """
+    Root Mean Squared Error
+
+    """
+
+    def __init__(self, URM_all):
+        super(RMSE, self).__init__()
+
+        self.cumulative_squared_error = 0.0
+
+        self._min_rating = np.min(URM_all.data)
+        self._max_rating = np.max(URM_all.data)
+
+        self._n_predictions = 0
+
+    def add_recommendations(self, all_items_predicted_ratings, relevant_items, relevant_items_rating):
+
+        assert len(relevant_items) == len(relevant_items_rating), \
+            "RMSE: the list of relevant items and of the corresponding rating do not have the same length"
+
+        assert np.all(relevant_items_rating >= self._min_rating) and np.all(relevant_items_rating <= self._max_rating), \
+            "RMSE: relevant_items_rating contains values outside the clip range inferred from URM_all"
+
+        # Important, some items will have -np.inf score and are treated as if they have the minimal rating possible
+        all_items_clipped_ratings = np.clip(all_items_predicted_ratings,
+                                            a_min = self._min_rating,
+                                            a_max = self._max_rating)
+
+        relevant_items_error = (all_items_clipped_ratings[relevant_items] - relevant_items_rating)**2
+
+        self.cumulative_squared_error += np.sum(relevant_items_error)
+        self._n_predictions += len(relevant_items)
+
+    def get_metric_value(self):
+
+        if self._n_predictions == 0:
+            return np.nan
+
+        MSE = self.cumulative_squared_error/self._n_predictions
+        return np.sqrt(MSE)
+
+    def merge_with_other(self, other_metric_object):
+        assert other_metric_object is RMSE, "RMSE: attempting to merge with a metric object of different type"
+
+        self.cumulative_squared_error += other_metric_object.cumulative_squared_error
+        self._n_predictions += other_metric_object._n_predictions
+
+
+
+####################################################################################################################
+###############                 BEYOND-ACCURACY METRICS
+####################################################################################################################
+
+
+class _Global_Item_Distribution_Counter(_Metrics_Object):
+    """
+    This abstract class implements the basic functions to calculate the global distribution of items
+    recommended by the algorithm and is used by various diversity metrics
+    """
+    def __init__(self, n_items, ignore_items):
+        super(_Global_Item_Distribution_Counter, self).__init__()
+
+        self.recommended_counter = np.zeros(n_items, dtype=np.float)
+        self.ignore_items = ignore_items.astype(np.int).copy()
+
+
+    def add_recommendations(self, recommended_items_ids):
+        if len(recommended_items_ids) > 0:
+            self.recommended_counter[recommended_items_ids] += 1
+
+    def _get_recommended_items_counter(self):
+
+        recommended_counter = self.recommended_counter.copy()
+
+        recommended_counter_mask = np.ones_like(recommended_counter, dtype = np.bool)
+        recommended_counter_mask[self.ignore_items] = False
+
+        recommended_counter = recommended_counter[recommended_counter_mask]
+
+        return recommended_counter
+
+
+    def merge_with_other(self, other_metric_object):
+        assert isinstance(other_metric_object, self.__class__), "{}: attempting to merge with a metric object of different type".format(self.__class__)
+
+        self.recommended_counter += other_metric_object.recommended_counter
+
+    def get_metric_value(self):
+        raise NotImplementedError()
+
+
+
+
+class Coverage_Item(_Global_Item_Distribution_Counter):
+    """
+    Item coverage represents the percentage of the overall items which were recommended
+    https://gab41.lab41.org/recommender-systems-its-not-all-about-the-accuracy-562c7dceeaff
+    """
+
+    def __init__(self, n_items, ignore_items):
+        super(Coverage_Item, self).__init__( n_items, ignore_items)
+
+    def get_metric_value(self):
+
+        recommended_mask = self._get_recommended_items_counter() > 0
+
+        return recommended_mask.sum()/len(recommended_mask)
+
+
+
+
+class Coverage_Test_Correct(_Global_Item_Distribution_Counter):
+    """
+    Item coverage represents the percentage of the overall test items which were correctly recommended
+    https://gab41.lab41.org/recommender-systems-its-not-all-about-the-accuracy-562c7dceeaff
+    """
+
+    def __init__(self, n_items, ignore_items):
+        super(Coverage_Test_Correct, self).__init__(n_items, ignore_items)
+
+    def add_recommendations(self, recommended_items_ids, is_relevant):
+        super(Coverage_Test_Correct, self).add_recommendations(np.array(recommended_items_ids)[is_relevant])
+
+    def get_metric_value(self):
+
+        recommended_mask = self._get_recommended_items_counter() > 0
+
+        return recommended_mask.sum()/len(recommended_mask)
+
+
+
+class Coverage_User(_Metrics_Object):
+    """
+    User coverage represents the percentage of the overall users for which we can make recommendations.
+    If there is at least one recommendation the user is considered as covered
+    https://gab41.lab41.org/recommender-systems-its-not-all-about-the-accuracy-562c7dceeaff
+    """
+
+    def __init__(self, n_users, ignore_users):
+        super(Coverage_User, self).__init__()
+        self.users_mask = np.zeros(n_users, dtype=np.bool)
+        self.n_ignore_users = len(ignore_users)
+
+    def add_recommendations(self, recommended_items_ids, user_id):
+        self.users_mask[user_id] = len(recommended_items_ids)>0
+
+    def get_metric_value(self):
+        return self.users_mask.sum()/(len(self.users_mask)-self.n_ignore_users)
+
+    def merge_with_other(self, other_metric_object):
+        assert other_metric_object is Coverage_User, "Coverage_User: attempting to merge with a metric object of different type"
+
+        self.users_mask = np.logical_or(self.users_mask, other_metric_object.users_mask)
+
+
+
+class Coverage_User_Correct(_Metrics_Object):
+    """
+    User coverage represents the percentage of the overall users for which we can make at least one correct recommendations.
+    If there is at least one correct recommendation the user is considered as covered
+    https://gab41.lab41.org/recommender-systems-its-not-all-about-the-accuracy-562c7dceeaff
+    """
+
+    def __init__(self, n_users, ignore_users):
+        super(Coverage_User_Correct, self).__init__()
+        self.users_mask = np.zeros(n_users, dtype=np.bool)
+        self.n_ignore_users = len(ignore_users)
+
+    def add_recommendations(self, is_relevant, user_id):
+        self.users_mask[user_id] = np.any(is_relevant)
+
+    def get_metric_value(self):
+        return self.users_mask.sum()/(len(self.users_mask)-self.n_ignore_users)
+
+    def merge_with_other(self, other_metric_object):
+        assert other_metric_object is Coverage_User, "Coverage_User_Correct: attempting to merge with a metric object of different type"
+
+        self.users_mask = np.logical_or(self.users_mask, other_metric_object.users_mask)
+
+
+
+
+class Gini_Diversity(_Global_Item_Distribution_Counter):
     """
     Gini diversity index, computed from the Gini Index but with inverted range, such that high values mean higher diversity
     This implementation ignores zero-occurrence items
@@ -149,43 +410,40 @@ class Gini_Diversity(Metrics_Object):
     """
 
     def __init__(self, n_items, ignore_items):
-        super(Gini_Diversity, self).__init__()
-        self.recommended_counter = np.zeros(n_items, dtype=np.float)
-        self.ignore_items = ignore_items.astype(np.int).copy()
-
-    def add_recommendations(self, recommended_items_ids):
-        if len(recommended_items_ids) > 0:
-            self.recommended_counter[recommended_items_ids] += 1
+        super(Gini_Diversity, self).__init__(n_items, ignore_items)
 
     def get_metric_value(self):
 
-        recommended_counter = self.recommended_counter.copy()
-
-        recommended_counter_mask = np.ones_like(recommended_counter, dtype = np.bool)
-        recommended_counter_mask[self.ignore_items] = False
-        recommended_counter_mask[recommended_counter == 0] = False
-
-        recommended_counter = recommended_counter[recommended_counter_mask]
-
-        n_items = len(recommended_counter)
-
-        recommended_counter_sorted = np.sort(recommended_counter)       # values must be sorted
-        index = np.arange(1, n_items+1)                                 # index per array element
-
-        #gini_index = (np.sum((2 * index - n_items  - 1) * recommended_counter_sorted)) / (n_items * np.sum(recommended_counter_sorted))
-        gini_diversity = 2*np.sum((n_items + 1 - index)/(n_items+1) * recommended_counter_sorted/np.sum(recommended_counter_sorted))
+        recommended_counter = self._get_recommended_items_counter()
+        gini_diversity = _compute_diversity_gini(recommended_counter)
 
         return gini_diversity
 
-    def merge_with_other(self, other_metric_object):
-        assert other_metric_object is Gini_Diversity, "Gini_Diversity: attempting to merge with a metric object of different type"
-
-        self.recommended_counter += other_metric_object.recommended_counter
 
 
 
+def _compute_diversity_gini(recommended_counter):
+    """
+    The function computes the gini diversity of the given recommended item distribution.
+    This is NOT the Gini index, rather a variation of it such that high values mean higher diversity
+    :param recommended_counter:
+    :return:
+    """
 
-class Diversity_Herfindahl(Metrics_Object):
+    n_items = len(recommended_counter)
+
+    recommended_counter_sorted = np.sort(recommended_counter)       # values must be sorted
+    index = np.arange(1, n_items+1)                                 # index per array element
+
+    #gini_index = (np.sum((2 * index - n_items  - 1) * recommended_counter_sorted)) / (n_items * np.sum(recommended_counter_sorted))
+    gini_diversity = 2*np.sum((n_items + 1 - index)/(n_items+1) * recommended_counter_sorted/np.sum(recommended_counter_sorted))
+
+    return gini_diversity
+
+
+
+
+class Diversity_Herfindahl(_Global_Item_Distribution_Counter):
     """
     The Herfindahl index is also known as Concentration index, it is used in economy to determine whether the market quotas
     are such that an excessive concentration exists. It is here used as a diversity index, if high means high diversity.
@@ -199,40 +457,31 @@ class Diversity_Herfindahl(Metrics_Object):
     """
 
     def __init__(self, n_items, ignore_items):
-        super(Diversity_Herfindahl, self).__init__()
-        self.recommended_counter = np.zeros(n_items, dtype=np.float)
-        self.ignore_items = ignore_items.astype(np.int).copy()
-
-    def add_recommendations(self, recommended_items_ids):
-        if len(recommended_items_ids) > 0:
-            self.recommended_counter[recommended_items_ids] += 1
+        super(Diversity_Herfindahl, self).__init__(n_items, ignore_items)
 
     def get_metric_value(self):
 
-        recommended_counter = self.recommended_counter.copy()
-
-        recommended_counter_mask = np.ones_like(recommended_counter, dtype = np.bool)
-        recommended_counter_mask[self.ignore_items] = False
-
-        recommended_counter = recommended_counter[recommended_counter_mask]
-
-        if recommended_counter.sum() != 0:
-            herfindahl_index = 1 - np.sum((recommended_counter / recommended_counter.sum()) ** 2)
-        else:
-            herfindahl_index = np.nan
+        recommended_counter = self._get_recommended_items_counter()
+        herfindahl_index = _compute_diversity_herfindahl(recommended_counter)
 
         return herfindahl_index
 
-    def merge_with_other(self, other_metric_object):
-        assert other_metric_object is Diversity_Herfindahl, "Diversity_Herfindahl: attempting to merge with a metric object of different type"
-
-        self.recommended_counter += other_metric_object.recommended_counter
 
 
+def _compute_diversity_herfindahl(recommended_counter):
+
+    if recommended_counter.sum() != 0:
+        herfindahl_index = 1 - np.sum((recommended_counter / recommended_counter.sum()) ** 2)
+    else:
+        herfindahl_index = np.nan
+
+    return herfindahl_index
 
 
 
-class Shannon_Entropy(Metrics_Object):
+
+
+class Shannon_Entropy(_Global_Item_Distribution_Counter):
     """
     Shannon Entropy is a well known metric to measure the amount of information of a certain string of data.
     Here is applied to the global number of times an item has been recommended.
@@ -249,53 +498,43 @@ class Shannon_Entropy(Metrics_Object):
     """
 
     def __init__(self, n_items, ignore_items):
-        super(Shannon_Entropy, self).__init__()
-        self.recommended_counter = np.zeros(n_items, dtype=np.float)
-        self.ignore_items = ignore_items.astype(np.int).copy()
-
-    def add_recommendations(self, recommended_items_ids):
-        if len(recommended_items_ids) > 0:
-            self.recommended_counter[recommended_items_ids] += 1
+        super(Shannon_Entropy, self).__init__(n_items, ignore_items)
 
     def get_metric_value(self):
 
-        assert np.all(self.recommended_counter >= 0.0), "Shannon_Entropy: self.recommended_counter contains negative counts"
-
-        recommended_counter = self.recommended_counter.copy()
-
-        # Ignore from the computation both ignored items and items with zero occurrence.
-        # Zero occurrence items will have zero probability and will not change the result, butt will generate nans if used in the log
-        recommended_counter_mask = np.ones_like(recommended_counter, dtype = np.bool)
-        recommended_counter_mask[self.ignore_items] = False
-        recommended_counter_mask[recommended_counter == 0] = False
-
-        recommended_counter = recommended_counter[recommended_counter_mask]
-
-        n_recommendations = recommended_counter.sum()
-
-        recommended_probability = recommended_counter/n_recommendations
-
-        shannon_entropy = -np.sum(recommended_probability * np.log2(recommended_probability))
+        recommended_counter = self._get_recommended_items_counter()
+        shannon_entropy = _compute_shannon_entropy(recommended_counter)
 
         return shannon_entropy
 
-    def merge_with_other(self, other_metric_object):
-        assert other_metric_object is Gini_Diversity, "Shannon_Entropy: attempting to merge with a metric object of different type"
-
-        assert np.all(self.recommended_counter >= 0.0), "Shannon_Entropy: self.recommended_counter contains negative counts"
-        assert np.all(other_metric_object.recommended_counter >= 0.0), "Shannon_Entropy: other.recommended_counter contains negative counts"
-
-        self.recommended_counter += other_metric_object.recommended_counter
 
 
 
 
+def _compute_shannon_entropy(recommended_counter):
 
-import scipy.sparse as sps
+    # Ignore from the computation both ignored items and items with zero occurrence.
+    # Zero occurrence items will have zero probability and will not change the result, butt will generate nans if used in the log
+    recommended_counter_mask = np.ones_like(recommended_counter, dtype = np.bool)
+    recommended_counter_mask[recommended_counter == 0] = False
+
+    recommended_counter = recommended_counter[recommended_counter_mask]
+
+    n_recommendations = recommended_counter.sum()
+
+    recommended_probability = recommended_counter/n_recommendations
+
+    shannon_entropy = -np.sum(recommended_probability * np.log2(recommended_probability))
+
+    return shannon_entropy
 
 
 
-class Novelty(Metrics_Object):
+
+
+
+
+class Novelty(_Metrics_Object):
     """
     Novelty measures how "novel" a recommendation is in terms of how popular the item was in the train set.
 
@@ -350,9 +589,7 @@ class Novelty(Metrics_Object):
 
 
 
-
-
-class AveragePopularity(Metrics_Object):
+class AveragePopularity(_Metrics_Object):
     """
     Average popularity the recommended items have in the train data.
     The popularity is normalized by setting as 1 the item with the highest popularity in the train data
@@ -401,8 +638,7 @@ class AveragePopularity(Metrics_Object):
 
 
 
-
-class Diversity_similarity(Metrics_Object):
+class Diversity_similarity(_Metrics_Object):
     """
     Intra list diversity computes the diversity of items appearing in the recommendations received by each single user, by using an item_diversity_matrix.
 
@@ -460,7 +696,8 @@ class Diversity_similarity(Metrics_Object):
 
 
 
-class Diversity_MeanInterList(Metrics_Object):
+
+class Diversity_MeanInterList(_Metrics_Object):
     """
     MeanInterList diversity measures the uniqueness of different users' recommendation lists.
 
@@ -471,6 +708,7 @@ class Diversity_MeanInterList(Metrics_Object):
 
     It can be demonstrated that this metric does not require to compute the common items all possible couples of users have in common
     but rather it is only sensitive to the total amount of time each item has been recommended.
+    Please refer to my PhD. Thesis Appendix B for references "An assessment of reproducibility and methodological issues in neural recommender systems research"
 
     MeanInterList diversity is a function of the square of the probability an item has been recommended to any user, hence
     MeanInterList diversity is equivalent to the Herfindahl index as they measure the same quantity.
@@ -571,156 +809,9 @@ class Diversity_MeanInterList(Metrics_Object):
 
 
 
-
-
-def roc_auc(is_relevant):
-
-    ranks = np.arange(len(is_relevant))
-    pos_ranks = ranks[is_relevant]
-    neg_ranks = ranks[~is_relevant]
-    auc_score = 0.0
-
-    if len(neg_ranks) == 0:
-        return 1.0
-
-    if len(pos_ranks) > 0:
-        for pos_pred in pos_ranks:
-            auc_score += np.sum(pos_pred < neg_ranks, dtype=np.float32)
-        auc_score /= (pos_ranks.shape[0] * neg_ranks.shape[0])
-
-    assert 0 <= auc_score <= 1, auc_score
-    return auc_score
-
-
-
-def arhr(is_relevant):
-    # average reciprocal hit-rank (ARHR) of all relevant items
-    # As opposed to MRR, ARHR takes into account all relevant items and not just the first
-    # pag 17
-    # http://glaros.dtc.umn.edu/gkhome/fetch/papers/itemrsTOIS04.pdf
-    # https://emunix.emich.edu/~sverdlik/COSC562/ItemBasedTopTen.pdf
-
-    p_reciprocal = 1/np.arange(1,len(is_relevant)+1, 1.0, dtype=np.float64)
-    arhr_score = is_relevant.dot(p_reciprocal)
-
-    #assert 0 <= arhr_score <= p_reciprocal.sum(), "arhr_score {} should be between 0 and {}".format(arhr_score, p_reciprocal.sum())
-    assert not np.isnan(arhr_score), "ARHR is NaN"
-    return arhr_score
-
-
-
-def precision(is_relevant):
-
-    if len(is_relevant) == 0:
-        precision_score = 0.0
-    else:
-        precision_score = np.sum(is_relevant, dtype=np.float32) / len(is_relevant)
-
-    assert 0 <= precision_score <= 1, precision_score
-    return precision_score
-
-
-def precision_recall_min_denominator(is_relevant, n_test_items):
-
-    if len(is_relevant) == 0:
-        precision_score = 0.0
-    else:
-        precision_score = np.sum(is_relevant, dtype=np.float32) / min(n_test_items, len(is_relevant))
-
-    assert 0 <= precision_score <= 1, precision_score
-    return precision_score
-
-
-def rmse(all_items_predicted_ratings, relevant_items, relevant_items_rating):
-
-    # Important, some items will have -np.inf score and are treated as if they did not exist
-
-    # RMSE with test items
-    relevant_items_error = (all_items_predicted_ratings[relevant_items]-relevant_items_rating)**2
-
-    finite_prediction_mask = np.isfinite(relevant_items_error)
-
-    if finite_prediction_mask.sum() == 0:
-        rmse = np.nan
-
-    else:
-        relevant_items_error = relevant_items_error[finite_prediction_mask]
-
-        squared_error = np.sum(relevant_items_error)
-
-        # # Second the RMSE against all non-test items assumed having true rating 0
-        # # In order to avoid the need of explicitly indexing all non-relevant items, use a difference
-        # squared_error += np.sum(all_items_predicted_ratings[np.isfinite(all_items_predicted_ratings)]**2) - \
-        #                  np.sum(all_items_predicted_ratings[relevant_items][np.isfinite(all_items_predicted_ratings[relevant_items])]**2)
-
-        mean_squared_error = squared_error/finite_prediction_mask.sum()
-        rmse = np.sqrt(mean_squared_error)
-
-    return rmse
-
-
-def recall(is_relevant, pos_items):
-
-    recall_score = np.sum(is_relevant, dtype=np.float32) / pos_items.shape[0]
-
-    assert 0 <= recall_score <= 1, recall_score
-    return recall_score
-
-
-def rr(is_relevant):
-    # reciprocal rank of the FIRST relevant item in the ranked list (0 if none)
-
-    ranks = np.arange(1, len(is_relevant) + 1)[is_relevant]
-
-    if len(ranks) > 0:
-        return 1. / ranks[0]
-    else:
-        return 0.0
-
-
-def average_precision(is_relevant, pos_items):
-
-    if len(is_relevant) == 0:
-        a_p = 0.0
-    else:
-        p_at_k = is_relevant * np.cumsum(is_relevant, dtype=np.float32) / (1 + np.arange(is_relevant.shape[0]))
-        a_p = np.sum(p_at_k) / np.min([pos_items.shape[0], is_relevant.shape[0]])
-
-    assert 0 <= a_p <= 1, a_p
-    return a_p
-
-
-def ndcg(ranked_list, pos_items, relevance=None, at=None):
-
-    if relevance is None:
-        relevance = np.ones_like(pos_items)
-    assert len(relevance) == pos_items.shape[0]
-
-    # Create a dictionary associating item_id to its relevance
-    # it2rel[item] -> relevance[item]
-    it2rel = {it: r for it, r in zip(pos_items, relevance)}
-
-    # Creates array of length "at" with the relevance associated to the item in that position
-    rank_scores = np.asarray([it2rel.get(it, 0.0) for it in ranked_list[:at]], dtype=np.float32)
-
-    # IDCG has all relevances to 1, up to the number of items in the test set
-    ideal_dcg = dcg(np.sort(relevance)[::-1])
-
-    # DCG uses the relevance of the recommended items
-    rank_dcg = dcg(rank_scores)
-
-    if rank_dcg == 0.0:
-        return 0.0
-
-    ndcg_ = rank_dcg / ideal_dcg
-    # assert 0 <= ndcg_ <= 1, (rank_dcg, ideal_dcg, ndcg_)
-    return ndcg_
-
-
-def dcg(scores):
-    return np.sum(np.divide(np.power(2, scores) - 1, np.log(np.arange(scores.shape[0], dtype=np.float32) + 2)),
-                  dtype=np.float32)
-
+####################################################################################################################
+###############                 TESTS
+####################################################################################################################
 
 metrics = ['AUC', 'Precision' 'Recall', 'MAP', 'NDCG']
 

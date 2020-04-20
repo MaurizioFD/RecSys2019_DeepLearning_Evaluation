@@ -7,10 +7,12 @@ Created on 18/12/18
 """
 
 
-
+from Base.BaseCBFRecommender import BaseItemCBFRecommender
 from Base.BaseMatrixFactorizationRecommender import BaseMatrixFactorizationRecommender
 from Base.Incremental_Training_Early_Stopping import Incremental_Training_Early_Stopping
+from Base.BaseTempFolder import BaseTempFolder
 from Base.Recommender_utils import check_matrix
+from Base.Recommender_utils import get_unique_temp_folder
 
 import numpy as np
 import tensorflow as tf
@@ -24,16 +26,12 @@ from Conferences.KDD.CollaborativeVAE_github.lib.cvae import CVAE, Params
 
 
 
-class CollaborativeVAE_RecommenderWrapper(BaseMatrixFactorizationRecommender, Incremental_Training_Early_Stopping):
-
+class CollaborativeVAE_RecommenderWrapper(BaseItemCBFRecommender, BaseMatrixFactorizationRecommender, Incremental_Training_Early_Stopping, BaseTempFolder):
 
     RECOMMENDER_NAME = "CollaborativeVAE_RecommenderWrapper"
-    DEFAULT_TEMP_FILE_FOLDER = './result_experiments/__Temp_CollaborativeVAE_RecommenderWrapper/'
 
-    def __init__(self, URM_train, ICM):
-        super(CollaborativeVAE_RecommenderWrapper, self).__init__(URM_train)
-
-        self.ICM = check_matrix(ICM.copy(), 'csr', dtype=np.float32)
+    def __init__(self, URM_train, ICM_train):
+        super(CollaborativeVAE_RecommenderWrapper, self).__init__(URM_train, ICM_train)
 
 
     def fit(self,
@@ -56,15 +54,7 @@ class CollaborativeVAE_RecommenderWrapper(BaseMatrixFactorizationRecommender, In
             ):
 
 
-        if temp_file_folder is None:
-            print("{}: Using default Temp folder '{}'".format(self.RECOMMENDER_NAME, self.DEFAULT_TEMP_FILE_FOLDER))
-            self.temp_file_folder = self.DEFAULT_TEMP_FILE_FOLDER
-        else:
-            print("{}: Using Temp folder '{}'".format(self.RECOMMENDER_NAME, temp_file_folder))
-            self.temp_file_folder = temp_file_folder
-
-        if not os.path.isdir(self.temp_file_folder):
-            os.makedirs(self.temp_file_folder)
+        self.temp_file_folder = self._get_unique_temp_folder(input_temp_file_folder=temp_file_folder)
 
         print("{}: Pretraining with VariationalAutoEncoder".format(self.RECOMMENDER_NAME))
 
@@ -78,12 +68,12 @@ class CollaborativeVAE_RecommenderWrapper(BaseMatrixFactorizationRecommender, In
 
         logging.info('loading data')
 
-        _, input_dim = self.ICM.shape
+        _, input_dim = self.ICM_train.shape
 
-        self.ICM = self.ICM.toarray()
-        idx = np.random.rand(self.ICM.shape[0]) < 0.8
-        train_X = self.ICM[idx, :]
-        test_X = self.ICM[~idx, :]
+        self.ICM_train = self.ICM_train.toarray()
+        idx = np.random.rand(self.ICM_train.shape[0]) < 0.8
+        train_X = self.ICM_train[idx, :]
+        test_X = self.ICM_train[~idx, :]
 
         logging.info('initializing sdae model')
 
@@ -176,7 +166,7 @@ class CollaborativeVAE_RecommenderWrapper(BaseMatrixFactorizationRecommender, In
 
         self._update_best_model()
 
-        self.model.m_theta[:] = self.model.transform(self.ICM)
+        self.model.m_theta[:] = self.model.transform(self.ICM_train)
         self.model.m_V[:] = self.model.m_theta
 
         self._train_with_early_stopping(epochs,
@@ -189,12 +179,7 @@ class CollaborativeVAE_RecommenderWrapper(BaseMatrixFactorizationRecommender, In
         self.USER_factors = self.USER_factors_best
         self.ITEM_factors = self.ITEM_factors_best
 
-
-        if self.temp_file_folder == self.DEFAULT_TEMP_FILE_FOLDER:
-            print("{}: cleaning temporary files".format(self.RECOMMENDER_NAME))
-            shutil.rmtree(self.DEFAULT_TEMP_FILE_FOLDER, ignore_errors=True)
-
-
+        self._clean_temp_folder(temp_file_folder=self.temp_file_folder)
 
 
 
@@ -214,13 +199,13 @@ class CollaborativeVAE_RecommenderWrapper(BaseMatrixFactorizationRecommender, In
     def _run_epoch(self, currentEpoch):
 
 
-        n = self.ICM.shape[0]
+        n = self.ICM_train.shape[0]
 
         # for epoch in range(self._params.n_epochs):
         num_iter = int(n / self._params.batch_size)
         # gen_loss = self.cdl_estimate(data_x, params.cdl_max_iter)
-        gen_loss = self.model.cdl_estimate(self.ICM, num_iter)
-        self.model.m_theta[:] = self.model.transform(self.ICM)
+        gen_loss = self.model.cdl_estimate(self.ICM_train, num_iter)
+        self.model.m_theta[:] = self.model.transform(self.ICM_train)
         likelihood = self.model.pmf_estimate(self._train_users, self._train_items, None, None, self._params)
         loss = -likelihood + 0.5 * gen_loss * n * self._params.lambda_r
 

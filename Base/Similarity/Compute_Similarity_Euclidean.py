@@ -24,7 +24,7 @@ class Compute_Similarity_Euclidean:
         :param topK:
         :param normalize
         :param row_weights:         Multiply the values in each row by a specified value. Array
-        :param similarity_from_distance_mode:       "exp"   euclidean_similarity = 1/(e ^ euclidean_distance)
+        :param similarity_from_distance_mode:       "exp"        euclidean_similarity = 1/(e ^ euclidean_distance)
                                                     "lin"        euclidean_similarity = 1/(1 + euclidean_distance)
                                                     "log"        euclidean_similarity = 1/(1 + euclidean_distance)
         :param args:                accepts other parameters not needed by the current object

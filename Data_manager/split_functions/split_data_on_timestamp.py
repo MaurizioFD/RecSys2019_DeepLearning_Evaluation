@@ -13,7 +13,7 @@ from Data_manager.IncrementalSparseMatrix import IncrementalSparseMatrix
 
 
 
-def split_data_on_timestamp(URM_all, URM_timestamp):
+def split_data_on_timestamp(URM_all, URM_timestamp, negative_items_per_positive=100):
 
     URM_all = sps.csr_matrix(URM_all)
     URM_timestamp = sps.csr_matrix(URM_timestamp)
@@ -47,7 +47,7 @@ def split_data_on_timestamp(URM_all, URM_timestamp):
         unobserved_items = all_items[unobserved_index]
         np.random.shuffle(unobserved_items)
 
-        URM_negative_builder.add_single_row(user_index, unobserved_items[:100], 1.0)
+        URM_negative_builder.add_single_row(user_index, unobserved_items[:negative_items_per_positive], 1.0)
 
 
         if len(user_profile) >= 3:

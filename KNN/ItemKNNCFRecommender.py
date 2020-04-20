@@ -7,7 +7,7 @@ Created on 23/10/17
 """
 
 from Base.Recommender_utils import check_matrix
-from Base.BaseSimilarityMatrixRecommender import BaseSimilarityMatrixRecommender
+from Base.BaseSimilarityMatrixRecommender import BaseItemSimilarityMatrixRecommender
 
 from Base.IR_feature_weighting import okapi_BM_25, TF_IDF
 import numpy as np
@@ -15,7 +15,7 @@ import numpy as np
 from Base.Similarity.Compute_Similarity import Compute_Similarity
 
 
-class ItemKNNCFRecommender(BaseSimilarityMatrixRecommender):
+class ItemKNNCFRecommender(BaseItemSimilarityMatrixRecommender):
     """ ItemKNN recommender"""
 
     RECOMMENDER_NAME = "ItemKNNCFRecommender"
@@ -24,14 +24,8 @@ class ItemKNNCFRecommender(BaseSimilarityMatrixRecommender):
 
 
 
-    def __init__(self, URM_train):
-        super(ItemKNNCFRecommender, self).__init__(URM_train)
-
-        cold_items_mask = np.ediff1d(self.URM_train.tocsc().indptr) == 0
-
-        if cold_items_mask.any():
-            print("{}: Detected {} ({:.2f} %) cold items.".format(
-                self.RECOMMENDER_NAME, cold_items_mask.sum(), cold_items_mask.sum()/len(cold_items_mask)*100))
+    def __init__(self, URM_train, verbose = True):
+        super(ItemKNNCFRecommender, self).__init__(URM_train, verbose = verbose)
 
 
     def fit(self, topK=50, shrink=100, similarity='cosine', normalize=True, feature_weighting = "none", **similarity_args):

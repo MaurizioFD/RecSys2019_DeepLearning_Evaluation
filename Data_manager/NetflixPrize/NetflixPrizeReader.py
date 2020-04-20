@@ -7,9 +7,8 @@ Created on 06/01/18
 """
 
 
-import zipfile, os
-
-
+import zipfile, os, shutil
+from Data_manager.Dataset import Dataset
 from Data_manager.DataReader import DataReader
 
 
@@ -22,8 +21,7 @@ class NetflixPrizeReader(DataReader):
     AVAILABLE_ICM = []
     DATASET_SPECIFIC_MAPPER = []
 
-    IS_IMPLICIT = True
-
+    IS_IMPLICIT = False
 
 
     def _get_dataset_name_root(self):
@@ -43,9 +41,9 @@ class NetflixPrizeReader(DataReader):
 
         except (FileNotFoundError, zipfile.BadZipFile):
 
-            print("NetflixPrizeReader: Unable to find data zip file.")
-            print("NetflixPrizeReader: Automatic download not available, please ensure the ZIP data file is in folder {}.".format(self.zip_file_folder))
-            print("NetflixPrizeReader: Data can be downloaded here: {}".format(self.DATASET_URL))
+            self._print("Unable to find data zip file.")
+            self._print("Automatic download not available, please ensure the ZIP data file is in folder {}.".format(self.zip_file_folder))
+            self._print("Data can be downloaded here: {}".format(self.DATASET_URL))
 
             # If directory does not exist, create
             if not os.path.exists(self.zip_file_folder):
@@ -55,10 +53,25 @@ class NetflixPrizeReader(DataReader):
 
 
 
-        self.URM_all, self.item_original_ID_to_index, self.user_original_ID_to_index = self._loadURM()
+        URM_all, self.item_original_ID_to_index, self.user_original_ID_to_index = self._loadURM()
+
+        loaded_URM_dict = {"URM_all": URM_all}
+
+        loaded_dataset = Dataset(dataset_name = self._get_dataset_name(),
+                                 URM_dictionary = loaded_URM_dict,
+                                 ICM_dictionary = None,
+                                 ICM_feature_mapper_dictionary = None,
+                                 UCM_dictionary = None,
+                                 UCM_feature_mapper_dictionary = None,
+                                 user_original_ID_to_index= self.user_original_ID_to_index,
+                                 item_original_ID_to_index= self.item_original_ID_to_index,
+                                 is_implicit = self.IS_IMPLICIT,
+                                 )
 
 
-        print("NetflixPrizeReader: loading complete")
+        self._print("loading complete")
+
+        return loaded_dataset
 
 
 
@@ -120,8 +133,6 @@ class NetflixPrizeReader(DataReader):
 
 
             print("NetflixPrizeReader: cleaning temporary files")
-
-            import shutil
 
             shutil.rmtree(self.decompressed_zip_file_folder + "decompressed/", ignore_errors=True)
 

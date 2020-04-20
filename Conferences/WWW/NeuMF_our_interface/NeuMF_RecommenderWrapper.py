@@ -13,7 +13,7 @@ from Base.Incremental_Training_Early_Stopping import Incremental_Training_Early_
 
 import numpy as np
 import scipy.sparse as sps
-
+from Base.DataIO import DataIO
 import os
 from keras.regularizers import l1, l2
 from keras.models import Model, load_model, save_model, clone_model
@@ -293,7 +293,6 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
 
         assert learner in ["adagrad", "adam", "rmsprop", "sgd"]
         assert learner_pretrain in ["adagrad", "adam", "rmsprop", "sgd"]
-        assert len(layers) == len(reg_layers)
 
         self.pretrain = pretrain
 
@@ -419,18 +418,16 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
 
 
 
-    def saveModel(self, folder_path, file_name = None):
-
-        import pickle
+    def save_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Saving model in file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving model in file '{}'".format(folder_path + file_name))
 
         self.model.save_weights(folder_path + file_name + "_weights", overwrite=True)
 
-        dictionary_to_save = {
+        data_dict_to_save = {
             "n_users": self.n_users,
             "n_items": self.n_items,
             "mf_dim": self.mf_dim,
@@ -439,36 +436,32 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
             "reg_mf": self.reg_mf,
         }
 
-        pickle.dump(dictionary_to_save,
-                    open(folder_path + file_name, "wb"),
-                    protocol=pickle.HIGHEST_PROTOCOL)
+        dataIO = DataIO(folder_path=folder_path)
+        dataIO.save_data(file_name=file_name, data_dict_to_save = data_dict_to_save)
 
 
-        print("{}: Saving complete".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving complete")
 
 
 
 
-    def loadModel(self, folder_path, file_name = None):
-
-        import pickle
+    def load_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Loading model from file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Loading model from file '{}'".format(folder_path + file_name))
 
-
-        data_dict = pickle.load(open(folder_path + file_name, "rb"))
+        dataIO = DataIO(folder_path=folder_path)
+        data_dict = dataIO.load_data(file_name=file_name)
 
         for attrib_name in data_dict.keys():
              self.__setattr__(attrib_name, data_dict[attrib_name])
-
 
 
         self.model = NeuCF_get_model(self.n_users, self.n_items, self.mf_dim, self.layers, self.reg_layers, self.reg_mf)
         self.model.load_weights(folder_path + file_name + "_weights")
 
 
-        print("{}: Loading complete".format(self.RECOMMENDER_NAME))
+        self._print("Loading complete")
 

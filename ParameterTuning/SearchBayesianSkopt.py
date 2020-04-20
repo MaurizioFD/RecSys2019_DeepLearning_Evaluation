@@ -6,31 +6,25 @@ Created on 14/12/18
 @author: Emanuele Chioso, Maurizio Ferrari Dacrema
 """
 
-import pickle, time, os, traceback
-import numpy as np
-
 from skopt import gp_minimize
 from skopt.space import Real, Integer, Categorical
 
-from ParameterTuning.SearchAbstractClass import SearchAbstractClass, writeLog
-from Base.Incremental_Training_Early_Stopping import Incremental_Training_Early_Stopping
-
+from ParameterTuning.SearchAbstractClass import SearchAbstractClass
+import traceback
 
 
 class SearchBayesianSkopt(SearchAbstractClass):
 
     ALGORITHM_NAME = "SearchBayesianSkopt"
 
-    # Value to be assigned to invalid configuration or if an Exception is raised
-    INVALID_CONFIG_VALUE = np.finfo(np.float16).max
+    def __init__(self, recommender_class, evaluator_validation = None, evaluator_test = None, verbose = True):
 
-
-    def __init__(self, recommender_class, evaluator_validation = None, evaluator_test = None):
-
+        assert evaluator_validation is not None, "{}: evaluator_validation must be provided".format(self.ALGORITHM_NAME)
 
         super(SearchBayesianSkopt, self).__init__(recommender_class,
-                                                  evaluator_validation= evaluator_validation,
-                                                  evaluator_test=evaluator_test)
+                                                  evaluator_validation = evaluator_validation,
+                                                  evaluator_test = evaluator_test,
+                                                  verbose = verbose)
 
 
 
@@ -71,33 +65,103 @@ class SearchBayesianSkopt(SearchAbstractClass):
         self.y0 = y0
 
 
-    def _init_metadata_dict(self):
 
-        self.metadata_dict = {"algorithm_name": self.ALGORITHM_NAME,
-                              "parameters_list": [None]*self.n_calls,
-                              "validation_result_list": [None]*self.n_calls,
-                              "train_time_list": [None]*self.n_calls,
-                              "evaluation_time_list": [None]*self.n_calls,
-                              "train_time_total": 0.0,
-                              "evaluation_time_total": 0.0,
-                              "train_time_avg": 0.0,
-                              "evaluation_time_avg": 0.0,
+    def _resume_from_saved(self):
 
-                              "test_result_list": [None]*self.n_calls,
-                              "evaluation_test_time_list": [None]*self.n_calls,
-                              "evaluation_test_time_total": 0.0,
-                              "evaluation_test_time_avg": 0.0,
+        try:
+            self.metadata_dict = self.dataIO.load_data(file_name = self.output_file_name_root + "_metadata")
 
-                              "best_parameters": None,
-                              "best_parameters_index": None,
-                              "best_result_validation": None,
-                              "best_result_test": None,
-                              }
+        except (KeyboardInterrupt, SystemExit) as e:
+            # If getting a interrupt, terminate without saving the exception
+            raise e
+
+        except FileNotFoundError:
+            self._write_log("{}: Resuming '{}' Failed, no such file exists.\n".format(self.ALGORITHM_NAME, self.output_file_name_root))
+            self.resume_from_saved = False
+            return None, None
+
+        except Exception as e:
+            self._write_log("{}: Resuming '{}' Failed, generic exception: {}.\n".format(self.ALGORITHM_NAME, self.output_file_name_root, str(e)))
+            traceback.print_exc()
+            self.resume_from_saved = False
+            return None, None
+
+        # Get hyperparameter list and corresponding result
+        # Make sure that the hyperparameters only contain those given as input and not others like the number of epochs
+        # selected by earlystopping
+        hyperparameters_list_saved = self.metadata_dict['hyperparameters_list']
+        result_on_validation_list_saved = self.metadata_dict['result_on_validation_list']
+
+        hyperparameters_list_input = []
+        result_on_validation_list_input = []
+
+        # The hyperparameters are saved for all cases even if they throw an exception
+        while self.model_counter<len(hyperparameters_list_saved) and hyperparameters_list_saved[self.model_counter] is not None:
+
+            hyperparameters_config_saved = hyperparameters_list_saved[self.model_counter]
+
+            hyperparameters_config_input = []
+
+            # Add only those having a search space, in the correct ordering
+            for index in range(len(self.hyperparams_names)):
+                key = self.hyperparams_names[index]
+                value_saved = hyperparameters_config_saved[key]
+
+                # Check if single value categorical. It is aimed at intercepting
+                # Hyperparameters that are chosen via early stopping and set them as the
+                # maximum value as per hyperparameter search space. If not, the gp_minimize will return an error
+                # as some values will be outside (lower) than the search space
+
+                if isinstance(self.hyperparams_values[index], Categorical) and self.hyperparams_values[index].transformed_size == 1:
+                    value_input = self.hyperparams_values[index].bounds[0]
+                else:
+                    value_input = value_saved
+
+                hyperparameters_config_input.append(value_input)
+
+
+            hyperparameters_list_input.append(hyperparameters_config_input)
+
+            # Check if the hyperparameters have a valid result or an exception
+            validation_result = result_on_validation_list_saved[self.model_counter]
+
+            if validation_result is None:
+                # Exception detected
+                result_on_validation_list_input.append(+ self.INVALID_CONFIG_VALUE)
+
+                assert self.metadata_dict["exception_list"][self.model_counter] is not None, \
+                    "{}: Resuming '{}' Failed due to inconsistent data. Invalid validation result found in position {} but no corresponding exception detected.".format(self.ALGORITHM_NAME, self.output_file_name_root, self.model_counter)
+            else:
+                result_on_validation_list_input.append(- validation_result[self.metric_to_optimize])
+
+
+
+            self.model_counter += 1
+
+
+        self._print("{}: Resuming '{}'... Loaded {} configurations.".format(self.ALGORITHM_NAME, self.output_file_name_root, self.model_counter))
+
+
+        # If the data structure exists but is empty, return None
+        if len(hyperparameters_list_input) == 0:
+            self.resume_from_saved = False
+            return None, None
+
+        # If loaded less configurations than desired ones
+        if self.model_counter < self.n_calls:
+            self.resume_from_saved = False
+
+
+        return hyperparameters_list_input, result_on_validation_list_input
 
 
 
 
-    def search(self, recommender_constructor_data,
+
+
+
+
+    def search(self, recommender_input_args,
                parameter_search_space,
                metric_to_optimize = "MAP",
                n_cases = 20,
@@ -106,48 +170,53 @@ class SearchBayesianSkopt(SearchAbstractClass):
                output_file_name_root = None,
                save_model = "best",
                save_metadata = True,
+               resume_from_saved = False,
+               recommender_input_args_last_test = None,
+               evaluate_on_test_each_best_solution = True,
                ):
+        """
 
-        assert save_model in ["no", "all", "best"], "{}: parameter save_model must be in '['no', 'all', 'best']', provided was '{}'.".format(self.ALGORITHM_NAME, save_model)
-        self.save_model = save_model
-
+        :param recommender_input_args:
+        :param parameter_search_space:
+        :param metric_to_optimize:
+        :param n_cases:
+        :param n_random_starts:
+        :param output_folder_path:
+        :param output_file_name_root:
+        :param save_model:          "no"    don't save anything
+                                    "all"   save every model
+                                    "best"  save the best model trained on train data alone and on last, if present
+                                    "last"  save only last, if present
+        :param save_metadata:
+        :param recommender_input_args_last_test:
+        :return:
+        """
 
 
         self._set_skopt_params()    ### default parameters are set here
 
-        self.recommender_constructor_data = recommender_constructor_data
+        self._set_search_attributes(recommender_input_args,
+                                    recommender_input_args_last_test,
+                                    metric_to_optimize,
+                                    output_folder_path,
+                                    output_file_name_root,
+                                    resume_from_saved,
+                                    save_metadata,
+                                    save_model,
+                                    evaluate_on_test_each_best_solution,
+                                    n_cases)
+
+
         self.parameter_search_space = parameter_search_space
-        self.metric_to_optimize = metric_to_optimize
-        self.output_folder_path = output_folder_path
-        self.output_file_name_root = output_file_name_root
         self.n_random_starts = n_random_starts
         self.n_calls = n_cases
-
-
-        # If directory does not exist, create
-        if not os.path.exists(self.output_folder_path):
-            os.makedirs(self.output_folder_path)
-
-
-        self.log_file = open(self.output_folder_path + self.output_file_name_root + "_{}.txt".format(self.ALGORITHM_NAME), "a")
-        self.model_counter = 0
-        self.best_solution_val = None
-        self.best_solution_counter = 0
-
         self.n_jobs = 1
-        self.save_metadata = save_metadata
-
-
-        if self.save_metadata:
-            self._init_metadata_dict()
-
-
+        self.n_loaded_counter = 0
 
 
         self.hyperparams = dict()
         self.hyperparams_names = list()
         self.hyperparams_values = list()
-        self.hyperparams_single_value = dict()
 
         skopt_types = [Real, Integer, Categorical]
 
@@ -158,11 +227,18 @@ class SearchBayesianSkopt(SearchAbstractClass):
                 self.hyperparams_values.append(hyperparam)
                 self.hyperparams[name] = hyperparam
 
-            elif(isinstance(hyperparam, str) or isinstance(hyperparam, int) or isinstance(hyperparam, bool)):
-                self.hyperparams_single_value[name] = hyperparam
-
             else:
                 raise ValueError("{}: Unexpected parameter type: {} - {}".format(self.ALGORITHM_NAME, str(name), str(hyperparam)))
+
+
+        if self.resume_from_saved:
+            hyperparameters_list_input, result_on_validation_list_saved = self._resume_from_saved()
+            self.x0 = hyperparameters_list_input
+            self.y0 = result_on_validation_list_saved
+
+            self.n_random_starts = max(0, self.n_random_starts - self.model_counter)
+            self.n_calls = max(0, self.n_calls - self.model_counter)
+            self.n_loaded_counter = self.model_counter
 
 
 
@@ -185,59 +261,20 @@ class SearchBayesianSkopt(SearchAbstractClass):
                                   noise=self.noise,
                                   n_jobs=self.n_jobs)
 
-        writeLog("{}: Search complete. Best config is {}: {}\n".format(self.ALGORITHM_NAME, self.best_solution_counter, self.best_solution_parameters), self.log_file)
+
+        if self.n_loaded_counter < self.model_counter:
+            self._write_log("{}: Search complete. Best config is {}: {}\n".format(self.ALGORITHM_NAME,
+                                                                           self.metadata_dict["hyperparameters_best_index"],
+                                                                           self.metadata_dict["hyperparameters_best"]))
 
 
-
-
-    def _evaluate(self, current_fit_parameters):
-
-        start_time = time.time()
-
-        # Construct a new recommender instance
-        recommender_instance = self.recommender_class(*self.recommender_constructor_data.CONSTRUCTOR_POSITIONAL_ARGS,
-                                                      **self.recommender_constructor_data.CONSTRUCTOR_KEYWORD_ARGS)
-
-
-        print("{}: Testing config:".format(self.ALGORITHM_NAME), current_fit_parameters)
-
-
-        recommender_instance.fit(*self.recommender_constructor_data.FIT_POSITIONAL_ARGS,
-                                 **self.recommender_constructor_data.FIT_KEYWORD_ARGS,
-                                 **current_fit_parameters,
-                                 **self.hyperparams_single_value)
-
-        train_time = time.time() - start_time
-        start_time = time.time()
-
-        # Evaluate recommender and get results for the first cutoff
-        result_dict, result_string = self.evaluator_validation.evaluateRecommender(recommender_instance)
-        result_dict = result_dict[list(result_dict.keys())[0]]
-
-        evaluation_time = time.time() - start_time
-
-        return result_dict, result_string, recommender_instance, train_time, evaluation_time
+        if self.recommender_input_args_last_test is not None:
+            self._evaluate_on_test_with_data_last()
 
 
 
 
 
-
-
-    def _evaluate_on_test(self, recommender_instance):
-
-        start_time = time.time()
-
-        # Evaluate recommender and get results for the first cutoff
-        result_dict, result_string = self.evaluator_test.evaluateRecommender(recommender_instance)
-
-        evaluation_test_time = time.time() - start_time
-
-        writeLog("{}: Best result evaluated on URM_test. Config: {} - results:\n{}\n".format(self.ALGORITHM_NAME,
-                                                                                             self.best_solution_parameters,
-                                                                                             result_string), self.log_file)
-
-        return result_dict, evaluation_test_time
 
 
     def _objective_function_list_input(self, current_fit_parameters_list_of_values):
@@ -246,129 +283,3 @@ class SearchBayesianSkopt(SearchAbstractClass):
 
         return self._objective_function(current_fit_parameters_dict)
 
-
-
-    def _objective_function(self, current_fit_parameters_dict):
-
-        try:
-
-            result_dict, _, recommender_instance, train_time, evaluation_time = self._evaluate(current_fit_parameters_dict)
-
-            current_result = - result_dict[self.metric_to_optimize]
-
-            # If the recommender uses Earlystopping, get the selected number of epochs
-            if isinstance(recommender_instance, Incremental_Training_Early_Stopping):
-
-                n_epochs_early_stopping_dict = recommender_instance.get_early_stopping_final_epochs_dict()
-                current_fit_parameters_dict = current_fit_parameters_dict.copy()
-
-                for epoch_label in n_epochs_early_stopping_dict.keys():
-
-                    epoch_value = n_epochs_early_stopping_dict[epoch_label]
-                    current_fit_parameters_dict[epoch_label] = epoch_value
-
-
-
-
-            if self.save_metadata:
-                self.metadata_dict["parameters_list"][self.model_counter] = current_fit_parameters_dict.copy()
-                self.metadata_dict["validation_result_list"][self.model_counter] = result_dict.copy()
-                self.metadata_dict["train_time_list"][self.model_counter] = train_time
-                self.metadata_dict["evaluation_time_list"][self.model_counter] = evaluation_time
-                self.metadata_dict["train_time_total"] += train_time
-                self.metadata_dict["evaluation_time_total"] += evaluation_time
-
-                self.metadata_dict["train_time_avg"] = self.metadata_dict["train_time_total"]/(self.model_counter+1)
-                self.metadata_dict["evaluation_time_avg"] = self.metadata_dict["evaluation_time_total"]/(self.model_counter+1)
-
-
-
-
-            # Always save best model separately
-            if self.save_model == "all":
-
-                print("{}: Saving model in {}\n".format(self.ALGORITHM_NAME, self.output_folder_path + self.output_file_name_root))
-
-                recommender_instance.saveModel(self.output_folder_path, file_name = self.output_file_name_root + "_model_{}".format(self.model_counter))
-
-
-
-            if self.best_solution_val == None or self.best_solution_val < result_dict[self.metric_to_optimize]:
-
-                writeLog("{}: New best config found. Config {}: {} - results: {}\n".format(self.ALGORITHM_NAME,
-                                                                                           self.model_counter,
-                                                                                           current_fit_parameters_dict,
-                                                                                           result_dict), self.log_file)
-
-                self.best_solution_val = result_dict[self.metric_to_optimize]
-                self.best_solution_counter = self.model_counter
-                self.best_solution_parameters = current_fit_parameters_dict.copy()
-
-                if self.save_metadata:
-                    self.metadata_dict["best_parameters"] = current_fit_parameters_dict.copy()
-                    self.metadata_dict["best_result_validation"] = result_dict.copy()
-                    self.metadata_dict["best_parameters_index"] = self.best_solution_counter
-
-
-
-
-
-                if self.save_model != "no":
-                    print("{}: Saving model in {}\n".format(self.ALGORITHM_NAME, self.output_folder_path + self.output_file_name_root))
-                    recommender_instance.saveModel(self.output_folder_path, file_name =self.output_file_name_root + "_best_model")
-
-
-                if self.evaluator_test is not None:
-                    result_dict_test, evaluation_test_time = self._evaluate_on_test(recommender_instance)
-
-
-                    if self.save_metadata:
-                        self.metadata_dict["best_result_test"] = result_dict_test.copy()
-                        self.metadata_dict["test_result_list"][self.model_counter] = result_dict_test.copy()
-                        self.metadata_dict["evaluation_test_time_list"][self.model_counter] = evaluation_test_time
-                        self.metadata_dict["evaluation_test_time_total"] += evaluation_test_time
-
-                        tested_models = sum([value is not None for value in self.metadata_dict["test_result_list"]])
-
-                        self.metadata_dict["evaluation_test_time_avg"] = self.metadata_dict["evaluation_test_time_total"]/tested_models
-
-
-
-            else:
-                writeLog("{}: Config {} is suboptimal. Config: {} - results: {}\n".format(self.ALGORITHM_NAME,
-                                                                                          self.model_counter,
-                                                                                          current_fit_parameters_dict,
-                                                                                          result_dict), self.log_file)
-
-
-
-            if self.save_metadata:
-
-                pickle.dump(self.metadata_dict.copy(),
-                            open(self.output_folder_path + self.output_file_name_root + "_metadata", "wb"),
-                            protocol=pickle.HIGHEST_PROTOCOL)
-
-
-            if current_result >= self.INVALID_CONFIG_VALUE:
-                writeLog("{}: WARNING! Config {} returned a value equal or worse than the default value to be assigned to invalid configurations."
-                         " If no better valid configuration is found, this parameter search may produce an invalid result.\n", self.log_file)
-
-
-        except Exception as exc:
-
-            writeLog("{}: Config {} Exception. Config: {} - Exception: {}\n".format(self.ALGORITHM_NAME,
-                                                                                  self.model_counter,
-                                                                                  current_fit_parameters_dict,
-                                                                                  str(exc)), self.log_file)
-
-            # Assign to this configuration the worst possible score
-            # Being a minimization problem, set it to the max value of a float
-            current_result = + self.INVALID_CONFIG_VALUE
-
-            traceback.print_exc()
-
-
-        self.model_counter += 1
-
-
-        return current_result

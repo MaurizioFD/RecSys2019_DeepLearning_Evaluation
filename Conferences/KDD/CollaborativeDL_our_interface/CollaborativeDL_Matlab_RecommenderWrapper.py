@@ -6,9 +6,11 @@ Created on 18/12/18
 @author: Maurizio Ferrari Dacrema
 """
 
+from Base.BaseCBFRecommender import BaseItemCBFRecommender
 from Base.BaseMatrixFactorizationRecommender import BaseMatrixFactorizationRecommender
+from Base.BaseTempFolder import BaseTempFolder
 
-import os, shutil, matlab.engine
+import os, shutil
 
 from numpy import genfromtxt
 from Base.Recommender_utils import check_matrix
@@ -16,22 +18,24 @@ import scipy.sparse as sps
 import numpy as np
 import scipy.io
 
+try:
+    import matlab.engine
+except ImportError:
+    print("CollaborativeDL_Matlab_RecommenderWrapper: Unable to import Matlab engine. Fitting of a new model will not be possible")
 
-class CollaborativeDL_Matlab_RecommenderWrapper(BaseMatrixFactorizationRecommender):
+
+
+class CollaborativeDL_Matlab_RecommenderWrapper(BaseItemCBFRecommender, BaseMatrixFactorizationRecommender, BaseTempFolder):
 
 
     RECOMMENDER_NAME = "CollaborativeDL_Matlab_RecommenderWrapper"
-    DEFAULT_TEMP_FILE_FOLDER = './result_experiments/__Temp_CollaborativeDL_Matlab_RecommenderWrapper/'
 
     DEFAULT_GSL_LIB_FOLDER = '/usr/lib/x86_64-linux-gnu/'
 
 
 
-    def __init__(self, URM_train, ICM):
-        super(CollaborativeDL_Matlab_RecommenderWrapper, self).__init__(URM_train)
-
-        self.ICM = check_matrix(ICM.copy(), 'csr', dtype=np.float32)
-
+    def __init__(self, URM_train, ICM_train):
+        super(CollaborativeDL_Matlab_RecommenderWrapper, self).__init__(URM_train, ICM_train)
 
     def fit(self,
             batch_size = 128,
@@ -44,16 +48,7 @@ class CollaborativeDL_Matlab_RecommenderWrapper(BaseMatrixFactorizationRecommend
             gsl_file_folder = None):
 
 
-        if temp_file_folder is None:
-            print("{}: Using default Temp folder '{}'".format(self.RECOMMENDER_NAME, self.DEFAULT_TEMP_FILE_FOLDER))
-            self.temp_file_folder = self.DEFAULT_TEMP_FILE_FOLDER
-        else:
-            print("{}: Using Temp folder '{}'".format(self.RECOMMENDER_NAME, temp_file_folder))
-            self.temp_file_folder = temp_file_folder
-
-        if not os.path.isdir(self.temp_file_folder):
-            os.makedirs(self.temp_file_folder)
-
+        self.temp_file_folder = self._get_unique_temp_folder(input_temp_file_folder=temp_file_folder)
 
         if gsl_file_folder is None:
             print("{}: Using default gsl folder '{}'".format(self.RECOMMENDER_NAME, self.DEFAULT_GSL_LIB_FOLDER))
@@ -70,10 +65,10 @@ class CollaborativeDL_Matlab_RecommenderWrapper(BaseMatrixFactorizationRecommend
 
         print("CollaborativeDL_Matlab_RecommenderWrapper: Saving temporary data files for matlab use ... ")
 
-        n_features = self.ICM.shape[1]
+        n_features = self.ICM_train.shape[1]
 
         content_file = self.temp_file_folder + "ICM.mat"
-        scipy.io.savemat(content_file, {"X": self.ICM.toarray()}, appendmat=False)
+        scipy.io.savemat(content_file, {"X": self.ICM_train.toarray()}, appendmat=False)
 
         input_user_file = self.temp_file_folder + "cf-train-users.dat"
         self._save_dat_file_from_URM(self.URM_train, input_user_file)
@@ -127,11 +122,7 @@ class CollaborativeDL_Matlab_RecommenderWrapper(BaseMatrixFactorizationRecommend
         assert self.USER_factors.shape[1] == self.ITEM_factors.shape[1]
 
         print("CollaborativeDL_Matlab_RecommenderWrapper: Loading trained model from temp matlab files ... done!")
-
-
-        if self.temp_file_folder == self.DEFAULT_TEMP_FILE_FOLDER:
-            print("{}: cleaning temporary files".format(self.RECOMMENDER_NAME))
-            shutil.rmtree(self.DEFAULT_TEMP_FILE_FOLDER, ignore_errors=True)
+        self._clean_temp_folder(temp_file_folder=self.temp_file_folder)
 
 
 

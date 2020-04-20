@@ -47,13 +47,22 @@ def print_stat_ucm(urm, title=''):
 
 
 def print_stat_datareader(datareader):
-    print_stat_urm(datareader.URM_train + datareader.URM_test + datareader.URM_validation, title='DATASET')
-    print_stat_urm(datareader.URM_train, title='TRAIN_V')
-    print_stat_urm(datareader.URM_test, title='TEST')
-    print_stat_urm(datareader.URM_validation, title='VALID')
-    if hasattr(datareader, 'URM_negative'):
-        print_stat_urm(datareader.URM_negative, title='NEGATIVE')
-    if hasattr(datareader, 'ICM'):
-        print_stat_icm(datareader.ICM, title='ICM')
+
+    URM_train = datareader.URM_DICT["URM_train"]
+    URM_validation = datareader.URM_DICT["URM_validation"]
+    URM_test = datareader.URM_DICT["URM_test"]
+
+    print_stat_urm(URM_train + URM_test + URM_validation, title='DATASET')
+
+    for URM_name, URM_object in datareader.URM_DICT.items():
+        print_stat_urm(URM_object, title=URM_name)
+
+
+    if len(datareader.ICM_DICT)>0:
+        for ICM_name, ICM_object in datareader.ICM_DICT.items():
+            print_stat_icm(ICM_object, title=ICM_name)
+
+
     if hasattr(datareader, 'UCM'):
+        # Rimpiazzarlo con UCM_DICT ?
         print_stat_ucm(datareader.UCM, title='UCM')

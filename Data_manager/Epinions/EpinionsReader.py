@@ -6,10 +6,10 @@ Created on 14/09/17
 @author: Maurizio Ferrari Dacrema
 """
 
-import bz2
-
+import bz2, os
+from Data_manager.Dataset import Dataset
 from Data_manager.DataReader import DataReader
-from Data_manager.DataReader_utils import downloadFromURL, load_CSV_into_SparseBuilder
+from Data_manager.DataReader_utils import download_from_URL, load_CSV_into_SparseBuilder
 
 
 class EpinionsReader(DataReader):
@@ -19,6 +19,7 @@ class EpinionsReader(DataReader):
     AVAILABLE_ICM = []
     DATASET_SPECIFIC_MAPPER = []
 
+    IS_IMPLICIT = False
 
 
     def _get_dataset_name_root(self):
@@ -29,7 +30,7 @@ class EpinionsReader(DataReader):
     def _load_from_original_file(self):
         # Load data from original
 
-        print("EpinionsReader: Loading original data")
+        self._print("Loading original data")
 
         folder_path = self.DATASET_SPLIT_ROOT_FOLDER + self.DATASET_SUBFOLDER
 
@@ -43,7 +44,7 @@ class EpinionsReader(DataReader):
 
         except FileNotFoundError:
 
-            print("EpinionsReader: Unable to find decompressed data file. Decompressing...")
+            self._print("Unable to find decompressed data file. Decompressing...")
 
             try:
 
@@ -51,9 +52,9 @@ class EpinionsReader(DataReader):
 
             except Exception:
 
-                print("EpinionsReader: Unable to find or open compressed data file. Downloading...")
+                self._print("Unable to find or open compressed data file. Downloading...")
 
-                downloadFromURL(self.DATASET_URL, folder_path, "ratings_data.txt.bz2")
+                download_from_URL(self.DATASET_URL, folder_path, "ratings_data.txt.bz2")
 
                 compressed_file = bz2.open(compressed_file_path, "rb")
 
@@ -65,19 +66,31 @@ class EpinionsReader(DataReader):
             decompressed_file.close()
 
 
-        print("EpinionsReader: loading URM")
+        self._print("loading URM")
 
-        self.URM_all, self.item_original_ID_to_index, self.user_original_ID_to_index = load_CSV_into_SparseBuilder(decompressed_file_path, separator=" ", header = True)
+        URM_all, self.item_original_ID_to_index, self.user_original_ID_to_index = load_CSV_into_SparseBuilder(decompressed_file_path, separator=" ", header = False, timestamp = False)
+
+        loaded_URM_dict = {"URM_all": URM_all}
+
+        loaded_dataset = Dataset(dataset_name = self._get_dataset_name(),
+                                 URM_dictionary = loaded_URM_dict,
+                                 ICM_dictionary = None,
+                                 ICM_feature_mapper_dictionary = None,
+                                 UCM_dictionary = None,
+                                 UCM_feature_mapper_dictionary = None,
+                                 user_original_ID_to_index= self.user_original_ID_to_index,
+                                 item_original_ID_to_index= self.item_original_ID_to_index,
+                                 is_implicit = self.IS_IMPLICIT,
+                                 )
 
 
-
-        print("EpinionsReader: cleaning temporary files")
-
-        import os
+        self._print("cleaning temporary files")
 
         os.remove(decompressed_file_path)
 
-        print("EpinionsReader: loading complete")
+        self._print("loading complete")
+
+        return loaded_dataset
 
 
 
@@ -87,7 +100,9 @@ class EpinionsReader(DataReader):
         print("EpinionsReader: decompressing file...")
 
         for line in compressed_file:
-            decompressed_file.write(line.decode("utf-8"))
+            decoded_line = line.decode("utf-8")
+            if len(decoded_line.split(" ")) == 3:
+                decompressed_file.write(decoded_line)
 
         decompressed_file.flush()
 

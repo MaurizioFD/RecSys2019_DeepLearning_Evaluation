@@ -28,7 +28,7 @@ from time import time
 
 from Base.BaseRecommender import BaseRecommender
 from Base.Incremental_Training_Early_Stopping import Incremental_Training_Early_Stopping
-
+from Base.DataIO import DataIO
 
 def slice(x, index):
     return x[:, index, :, :]
@@ -511,8 +511,10 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
 
     RECOMMENDER_NAME = "MCRec_RecommenderWrapper"
 
-    def __init__(self, URM_train):
+    def __init__(self, URM_train, original_dataset_reader):
         super(MCRecML100k_RecommenderWrapper, self).__init__(URM_train)
+
+        self._original_dataset_reader = original_dataset_reader
 
 
     def _compute_item_score(self, user_id_array, items_to_compute = None):
@@ -609,37 +611,14 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
         return predictions
 
 
+    def _init_model(self):
 
-    def fit(self,
-            latent_dim = 128,
-            reg_latent = 0,
-            layers = [512, 256, 128, 64],
-            reg_layes = [0 ,0, 0, 0],
-            learning_rate = 0.001,
-            epochs = 30,
-            batch_size = 256,
-            num_negatives = 4,
-            **earlystopping_kwargs):
-
-
-        self.latent_dim = latent_dim
-        self.reg_latent = reg_latent
-        self.layers = layers
-        self.reg_layes = reg_layes
-        self.learning_rate = learning_rate
-        self.epochs = epochs
-        self.batch_size = batch_size
-        self.num_negatives = num_negatives
-
-
-        dataset = 'ml-100k'
 
         t1 = time()
-        dataset = Dataset('Conferences/KDD/MCRec_github/data/' + dataset)
-        trainMatrix, testRatings, testNegatives = dataset.trainMatrix, dataset.testRatings, dataset.testNegatives
 
-        # # Replace train data with the train split passed as parameter
-        # self._load_rating_file_as_map(self.URM_train, dataset)
+        dataset = self._original_dataset_reader
+
+        trainMatrix, testRatings, testNegatives = dataset.trainMatrix, dataset.testRatings, dataset.testNegatives
 
         self._train = dataset.train
         self._user_item_map = dataset.user_item_map
@@ -666,7 +645,7 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
         print("MCRec_RecommenderWrapper: building model")
         self.model = get_model(self.n_users, self.n_items, self.path_nums, self.timestamps, self.length, self.layers, self.reg_layes, self.latent_dim, self.reg_latent)
 
-        self.model.compile(optimizer = Adam(lr = learning_rate, decay = 1e-4),
+        self.model.compile(optimizer = Adam(lr = self.learning_rate, decay = 1e-4),
                       loss = 'binary_crossentropy')
         #model.compile(optimizer = Nadam(),
         #              loss = 'binary_crossentropy')
@@ -700,6 +679,31 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
         self._features = [user_feature, item_feature, type_feature]
 
 
+
+
+    def fit(self,
+            latent_dim = 128,
+            reg_latent = 0,
+            layers = [512, 256, 128, 64],
+            reg_layes = [0 ,0, 0, 0],
+            learning_rate = 0.001,
+            epochs = 30,
+            batch_size = 256,
+            num_negatives = 4,
+            **earlystopping_kwargs):
+
+
+        self.latent_dim = latent_dim
+        self.reg_latent = reg_latent
+        self.layers = layers
+        self.reg_layes = reg_layes
+        self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.num_negatives = num_negatives
+
+
+        self._init_model()
 
         self._best_model = clone_model(self.model)
         self._best_model.set_weights(self.model.get_weights())
@@ -762,18 +766,16 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
 
 
 
-    def saveModel(self, folder_path, file_name = None):
-
-        import pickle
+    def save_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Saving model in file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving model in file '{}'".format(folder_path + file_name))
 
         self.model.save_weights(folder_path + file_name + "_weights", overwrite=True)
 
-        dictionary_to_save = {
+        data_dict_to_save = {
             "n_users": self.n_users,
             "n_items": self.n_items,
             "path_nums": self.path_nums,
@@ -786,30 +788,30 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
             "learning_rate": self.learning_rate,
         }
 
-        pickle.dump(dictionary_to_save,
-                    open(folder_path + file_name, "wb"),
-                    protocol=pickle.HIGHEST_PROTOCOL)
+        dataIO = DataIO(folder_path=folder_path)
+        dataIO.save_data(file_name=file_name, data_dict_to_save = data_dict_to_save)
 
 
-        print("{}: Saving complete".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving complete")
 
 
 
 
-    def loadModel(self, folder_path, file_name = None):
-
-        import pickle
+    def load_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Loading model from file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Loading model from file '{}'".format(folder_path + file_name))
 
-
-        data_dict = pickle.load(open(folder_path + file_name, "rb"))
+        dataIO = DataIO(folder_path=folder_path)
+        data_dict = dataIO.load_data(file_name=file_name)
 
         for attrib_name in data_dict.keys():
              self.__setattr__(attrib_name, data_dict[attrib_name])
+
+
+        self._init_model()
 
 
         self.model = get_model(self.n_users, self.n_items, self.path_nums, self.timestamps, self.length, self.layers, self.reg_layes, self.latent_dim, self.reg_latent)
@@ -820,5 +822,5 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
         self.model.load_weights(folder_path + file_name + "_weights")
 
 
-        print("{}: Loading complete".format(self.RECOMMENDER_NAME))
+        self._print("Loading complete")
 

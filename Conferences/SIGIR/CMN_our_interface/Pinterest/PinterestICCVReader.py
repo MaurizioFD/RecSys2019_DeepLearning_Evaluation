@@ -7,23 +7,24 @@ Created on 14/09/17
 """
 
 
-import os, pickle
+import os
 import scipy.sparse as sps
 import numpy as np
 
 from Data_manager.IncrementalSparseMatrix import IncrementalSparseMatrix
 from Data_manager.split_functions.split_train_validation import split_train_validation_percentage_random_holdout
-from Data_manager.load_and_save_data import save_data_dict, load_data_dict
+from Data_manager.load_and_save_data import save_data_dict_zip, load_data_dict_zip
 
 class PinterestICCVReader(object):
 
-    def __init__(self):
+    URM_DICT = {}
+    ICM_DICT = {}
+
+    def __init__(self, pre_splitted_path):
         super(PinterestICCVReader, self).__init__()
 
-
-        pre_splitted_path = "Data_manager_split_datasets/PinterestICCV/SIGIR/CMN_our_interface/"
-
-        pre_splitted_filename = "splitted_data"
+        pre_splitted_path += "data_split/"
+        pre_splitted_filename = "splitted_data_"
 
         # If directory does not exist, create
         if not os.path.exists(pre_splitted_path):
@@ -33,7 +34,7 @@ class PinterestICCVReader(object):
 
             print("PinterestICCVReader: Attempting to load pre-splitted data")
 
-            for attrib_name, attrib_object in load_data_dict(pre_splitted_path, pre_splitted_filename).items():
+            for attrib_name, attrib_object in load_data_dict_zip(pre_splitted_path, pre_splitted_filename).items():
                  self.__setattr__(attrib_name, attrib_object)
 
 
@@ -45,30 +46,30 @@ class PinterestICCVReader(object):
 
 
             # data_reader = PinterestICCVReader()
-            # data_reader.load_data()
+            # loaded_dataset = data_reader.load_data()
             #
-            # URM_all = data_reader.get_URM_all()
+            # URM_all = loaded_dataset.get_URM_all()
             #
-            # self.URM_train, self.URM_validation, self.URM_test, self.URM_negative = split_train_validation_test_negative_leave_one_out_user_wise(URM_all, negative_items_per_positive=100)
+            # URM_train, URM_validation, URM_test, URM_negative = split_train_validation_test_negative_leave_one_out_user_wise(URM_all, negative_items_per_positive=100)
 
             dataset = Dataset_NeuralCollaborativeFiltering("Conferences/WWW/NeuMF_github/Data/pinterest-20")
 
-            self.URM_train_original, self.URM_test, self.URM_test_negative = dataset.URM_train, dataset.URM_test, dataset.URM_test_negative
+            URM_train_original, URM_test, URM_test_negative = dataset.URM_train, dataset.URM_test, dataset.URM_test_negative
 
-            self.URM_train, self.URM_validation = split_train_validation_percentage_random_holdout(self.URM_train_original.copy(), train_percentage=0.8)
+            URM_train, URM_validation = split_train_validation_percentage_random_holdout(URM_train_original.copy(), train_percentage=0.8)
 
 
 
-            data_dict = {
-                "URM_train_original": self.URM_train_original,
-                "URM_train": self.URM_train,
-                "URM_test": self.URM_test,
-                "URM_test_negative": self.URM_test_negative,
-                "URM_validation": self.URM_validation,
+            self.URM_DICT = {
+                "URM_train_original": URM_train_original,
+                "URM_train": URM_train,
+                "URM_test": URM_test,
+                "URM_test_negative": URM_test_negative,
+                "URM_validation": URM_validation,
             }
 
 
-            save_data_dict(data_dict, pre_splitted_path, pre_splitted_filename)
+            save_data_dict_zip(self.URM_DICT, self.ICM_DICT, pre_splitted_path, pre_splitted_filename)
 
 
             print("PinterestICCVReader: loading complete")

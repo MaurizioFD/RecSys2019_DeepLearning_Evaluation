@@ -5,31 +5,27 @@ Created on 08/11/18
 
 @author: Maurizio Ferrari Dacrema
 """
-
-
-
-
 import os, zipfile, shutil
 
 import numpy as np
 import scipy.sparse as sps
 
 from Data_manager.IncrementalSparseMatrix import IncrementalSparseMatrix
-from Data_manager.load_and_save_data import load_data_dict, save_data_dict
+from Data_manager.load_and_save_data import save_data_dict_zip, load_data_dict_zip
 
-from Data_manager.Movielens100K.Movielens100KReader import Movielens100KReader as Movielens100KReader_DataManager
+from Data_manager.Movielens.Movielens100KReader import Movielens100KReader as Movielens100KReader_DataManager
 
 class Movielens100KReader(object):
 
+    URM_DICT = {}
+    ICM_DICT = {}
 
-    def __init__(self):
+    def __init__(self, pre_splitted_path):
 
         super(Movielens100KReader, self).__init__()
 
-
-        pre_splitted_path = "Data_manager_split_datasets/Movielens100K/KDD/MCRec_our_interface/"
-
-        pre_splitted_filename = "splitted_data"
+        pre_splitted_path += "data_split/"
+        pre_splitted_filename = "splitted_data_"
 
         original_data_path = "Conferences/KDD/MCRec_github/data/"
 
@@ -41,7 +37,7 @@ class Movielens100KReader(object):
 
             print("Movielens100KReader: Attempting to load pre-splitted data")
 
-            for attrib_name, attrib_object in load_data_dict(pre_splitted_path, pre_splitted_filename).items():
+            for attrib_name, attrib_object in load_data_dict_zip(pre_splitted_path, pre_splitted_filename).items():
                  self.__setattr__(attrib_name, attrib_object)
 
 
@@ -64,10 +60,10 @@ class Movielens100KReader(object):
             URM_train.row -= 1
             URM_train.col -= 1
 
-            self.URM_train = sps.csr_matrix((np.ones_like(URM_train.data), (URM_train.row, URM_train.col)))
+            URM_train = sps.csr_matrix((np.ones_like(URM_train.data), (URM_train.row, URM_train.col)))
 
 
-            num_users, num_items = self.URM_train.shape
+            num_users, num_items = URM_train.shape
 
 
 
@@ -91,21 +87,21 @@ class Movielens100KReader(object):
 
 
             # the test data has repeated data, apparently
-            self.URM_test = URM_test_builder.get_SparseMatrix()
+            URM_test = URM_test_builder.get_SparseMatrix()
 
-            self.URM_test_negative = URM_test_negative_builder.get_SparseMatrix()
+            URM_test_negative = URM_test_negative_builder.get_SparseMatrix()
 
 
             # Split validation from train as 10%
             from Data_manager.split_functions.split_train_validation import split_train_validation_percentage_user_wise
 
-            self.URM_train, self.URM_validation = split_train_validation_percentage_user_wise(self.URM_train, train_percentage=0.9)
+            URM_train, URM_validation = split_train_validation_percentage_user_wise(URM_train, train_percentage=0.9)
 
 
             # Load features
 
             data_reader = Movielens100KReader_DataManager()
-            data_reader.load_data()
+            loaded_dataset = data_reader.load_data()
 
             zipFile_path = data_reader.DATASET_SPLIT_ROOT_FOLDER + data_reader.DATASET_SUBFOLDER
             dataFile = zipfile.ZipFile(zipFile_path + "ml-100k.zip")
@@ -117,19 +113,18 @@ class Movielens100KReader(object):
 
             shutil.rmtree(zipFile_path + "decompressed", ignore_errors=True)
 
-            self.ICM_dict = {"ICM_genre": ICM_genre}
-
-
-            data_dict = {
-                "URM_train": self.URM_train,
-                "URM_test": self.URM_test,
-                "URM_validation": self.URM_validation,
-                "URM_test_negative": self.URM_test_negative,
-                "ICM_dict": self.ICM_dict,
-
+            self.ICM_DICT = {
+                "ICM_genre": ICM_genre
             }
 
-            save_data_dict(data_dict, pre_splitted_path, pre_splitted_filename)
+            self.URM_DICT = {
+                "URM_train": URM_train,
+                "URM_test": URM_test,
+                "URM_test_negative": URM_test_negative,
+                "URM_validation": URM_validation,
+            }
+
+            save_data_dict_zip(self.URM_DICT, self.ICM_DICT, pre_splitted_path, pre_splitted_filename)
 
             print("Movielens100KReader: loading complete")
 

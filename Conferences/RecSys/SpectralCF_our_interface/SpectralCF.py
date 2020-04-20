@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
-from scipy.sparse import csr_matrix
+import time
+from Utils.seconds_to_biggest_unit import seconds_to_biggest_unit
 
 class SpectralCF(object):
     def __init__(self, K, graph, n_users, n_items, emb_dim, lr, batch_size, decay):
@@ -16,6 +17,8 @@ class SpectralCF(object):
 
     def compute_eigenvalues(self, lamda = None, U = None):
 
+        start_time = time.time()
+
         if lamda is None or U is None:
 
             print("SpectralCF: Computing adjacient_matrix...")
@@ -30,6 +33,9 @@ class SpectralCF(object):
             print("SpectralCF: Computing eigenvalues...")
             self.lamda, self.U = np.linalg.eig(self.L)
             self.lamda = np.diag(self.lamda)
+
+            new_time_value, new_time_unit = seconds_to_biggest_unit(time.time() - start_time)
+            print("SpectralCF: Initialization complete in {:.2f} {}".format(new_time_value, new_time_unit))
 
         else:
 

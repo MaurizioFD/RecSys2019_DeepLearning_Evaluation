@@ -38,9 +38,9 @@ def plot_popularity_bias(URM_object_list, URM_name_list, output_img_path, sort_o
     marker_iterator_local = itertools.cycle(marker_list)
 
 
-    plt.xlabel('Items')
-    plt.ylabel("Normalized interactions")
-    plt.title("Item popularity distribution for different URM splits")
+    plt.xlabel('Item id')
+    plt.ylabel("Normalized number of interactions per item")
+    #plt.title("Item popularity distribution for different URM splits")
 
     x_tick = np.arange(0,n_items, dtype=np.int)
 
@@ -88,11 +88,11 @@ def plot_popularity_bias(URM_object_list, URM_name_list, output_img_path, sort_o
     # fig.patch.set_facecolor('white')
     # plt.rcParams['figure.facecolor'] = 'white'
 
-    plt.savefig(output_img_path + ".png", dpi = 1200)
+    plt.savefig(output_img_path + ".png", dpi = 1200, bbox_inches='tight')
 
-    plt.savefig(output_img_path + ".pdf", dpi = 1200)
+    plt.savefig(output_img_path + ".pdf", dpi = 1200, bbox_inches='tight')
 
-    #plt.savefig(output_img_path + ".pgf")
+    # plt.savefig(output_img_path + ".pgf", bbox_inches='tight')
 
     plt.close()
 

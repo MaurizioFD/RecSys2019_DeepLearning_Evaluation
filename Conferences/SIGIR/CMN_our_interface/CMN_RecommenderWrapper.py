@@ -8,16 +8,16 @@ Created on 18/12/18
 
 
 from Base.BaseRecommender import BaseRecommender
+from Base.BaseTempFolder import BaseTempFolder
 from Base.Incremental_Training_Early_Stopping import Incremental_Training_Early_Stopping
-
+from Base.DataIO import DataIO
 
 import numpy as np
 import scipy.sparse as sps
 from collections import defaultdict
 from tqdm import tqdm
 import tensorflow as tf
-import os, copy
-import shutil
+import os, copy, shutil
 
 from Conferences.SIGIR.CMN_github.util.cmn import CollaborativeMemoryNetwork
 from Conferences.SIGIR.CMN_github.util.gmf import PairwiseGMF
@@ -111,11 +111,10 @@ class EvaluatorModelLoss(object):
 
 
 
-class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopping):
+class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopping, BaseTempFolder):
 
 
     RECOMMENDER_NAME = "CMN_RecommenderWrapper"
-    DEFAULT_TEMP_FILE_FOLDER = './result_experiments/__Temp_CMN_RecommenderWrapper/'
 
     def __init__(self, URM_train):
         super(CMN_RecommenderWrapper, self).__init__(URM_train)
@@ -204,7 +203,6 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
             else:
                 item_scores[user_index, :] = item_score_user.ravel()
 
-
         return item_scores
 
 
@@ -234,7 +232,6 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
             pretrain = True,
             learning_rate = 1e-3,
             verbose = False,
-            use_gpu = False,
             temp_file_folder = None,
             **earlystopping_kwargs):
 
@@ -244,21 +241,7 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
 
         self.verbose = verbose
 
-        if use_gpu:
-            os.environ['CUDA_VISIBLE_DEVICES'] = "0"
-        else:
-            os.environ['CUDA_VISIBLE_DEVICES'] = "-1"
-
-        if temp_file_folder is None:
-            print("{}: Using default Temp folder '{}'".format(self.RECOMMENDER_NAME, self.DEFAULT_TEMP_FILE_FOLDER))
-            self.temp_file_folder = self.DEFAULT_TEMP_FILE_FOLDER
-        else:
-            print("{}: Using Temp folder '{}'".format(self.RECOMMENDER_NAME, temp_file_folder))
-            self.temp_file_folder = temp_file_folder
-
-        if not os.path.isdir(self.temp_file_folder):
-            os.makedirs(self.temp_file_folder)
-
+        self.temp_file_folder = self._get_unique_temp_folder(input_temp_file_folder=temp_file_folder)
 
 
         # it is the max number of interaction an item has received
@@ -323,13 +306,15 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
         validation_metric_loss_GMF = "_average_loss_evaluation"
         evaluator_object_loss_GMF = EvaluatorModelLoss()
 
+        # Check if earlystopping has to be applied for GMF
+        earlystopping_kwargs_gmf = earlystopping_kwargs.copy()
+        if "evaluator_object" in earlystopping_kwargs and earlystopping_kwargs_gmf["evaluator_object"] is not None:
+            earlystopping_kwargs_gmf["validation_metric"] = validation_metric_loss_GMF
+            earlystopping_kwargs_gmf["evaluator_object"] = evaluator_object_loss_GMF
+
         self._train_with_early_stopping(epochs_gmf,
-                                        validation_every_n = earlystopping_kwargs["validation_every_n"],
-                                        stop_on_validation = True,
-                                        validation_metric = validation_metric_loss_GMF,
-                                        lower_validations_allowed = earlystopping_kwargs["lower_validations_allowed"],
-                                        evaluator_object = evaluator_object_loss_GMF,
-                                        algorithm_name = self.RECOMMENDER_NAME)
+                                        algorithm_name = self.RECOMMENDER_NAME,
+                                        **earlystopping_kwargs_gmf)
 
         self.epochs_best_gmf = self.epochs_best
 
@@ -387,13 +372,9 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
                     gpu_options=tf.GPUOptions(allow_growth=True)))
 
 
-        self.loadModel(self.temp_file_folder, file_name="best_model")
+        self.load_model(self.temp_file_folder, file_name="best_model")
 
-
-        if self.temp_file_folder == self.DEFAULT_TEMP_FILE_FOLDER:
-            print("{}: cleaning temporary files".format(self.RECOMMENDER_NAME))
-            shutil.rmtree(self.DEFAULT_TEMP_FILE_FOLDER, ignore_errors=True)
-
+        self._clean_temp_folder(temp_file_folder=self.temp_file_folder)
 
 
 
@@ -402,7 +383,7 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
 
 
     def _update_best_model_CMN(self):
-        self.saveModel(self.temp_file_folder, file_name="best_model")
+        self.save_model(self.temp_file_folder, file_name="best_model")
 
 
     def _update_best_model_GMF(self):
@@ -585,46 +566,42 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
 
 
 
-    def saveModel(self, folder_path, file_name = None):
+    def save_model(self, folder_path, file_name = None):
 
         #https://cv-tricks.com/tensorflow-tutorial/save-restore-tensorflow-models-quick-complete-tutorial/
-
-        import pickle
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Saving model in file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Saving model in file '{}'".format(folder_path + file_name))
 
-        dictionary_to_save = {"n_users": self.n_users,
+        data_dict_to_save = {"n_users": self.n_users,
                               "n_items": self.n_items,
                               "cmn_config_dict": self.cmn_config_clone.get_dict()
                               }
 
-        pickle.dump(dictionary_to_save,
-                    open(folder_path + file_name, "wb"),
-                    protocol=pickle.HIGHEST_PROTOCOL)
+        dataIO = DataIO(folder_path=folder_path)
+        dataIO.save_data(file_name=file_name, data_dict_to_save = data_dict_to_save)
 
         saver = tf.train.Saver()
 
         saver.save(self.sess, folder_path + file_name + "_session")
 
-        print("{}: Saving complete".format(self.RECOMMENDER_NAME))
+        self._print("Saving complete")
 
 
 
 
 
-    def loadModel(self, folder_path, file_name = None):
+    def load_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Loading model from file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Loading model from file '{}'".format(folder_path + file_name))
 
-        import pickle
-
-        data_dict = pickle.load(open(folder_path + file_name, "rb"))
+        dataIO = DataIO(folder_path=folder_path)
+        data_dict = dataIO.load_data(file_name=file_name)
 
         for attrib_name in data_dict.keys():
 
@@ -651,7 +628,7 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
         saver.restore(self.sess, folder_path + file_name + "_session")
 
 
-        print("{}: Loading complete".format(self.RECOMMENDER_NAME))
+        self._print("Loading complete")
 
 
 

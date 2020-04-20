@@ -40,6 +40,9 @@ class Compute_Similarity:
         :param args:                    other args required by the specific similarity implementation
         """
 
+        assert np.all(np.isfinite(dataMatrix.data)), \
+            "Compute_Similarity: Data matrix contains {} non finite values".format(np.sum(np.logical_not(np.isfinite(dataMatrix.data))))
+
         self.dense = False
 
         if similarity == "euclidean":
@@ -47,6 +50,11 @@ class Compute_Similarity:
             self.compute_similarity_object = Compute_Similarity_Euclidean(dataMatrix, **args)
 
         else:
+
+            assert not (dataMatrix.shape[0] == 1 and dataMatrix.nnz == dataMatrix.shape[1]),\
+                "Compute_Similarity: data has only 1 feature (shape: {}) with dense values," \
+                " vector and set based similarities are not defined on 1-dimensional dense data," \
+                " use Euclidean similarity instead.".format(dataMatrix.shape)
 
             if similarity is not None:
                 args["similarity"] = similarity

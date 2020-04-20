@@ -6,7 +6,8 @@
 """
 
 import numpy as np
-import pickle, os
+from Base.DataIO import DataIO
+import os
 from Base.Recommender_utils import check_matrix
 
 
@@ -15,7 +16,7 @@ class BaseRecommender(object):
 
     RECOMMENDER_NAME = "Recommender_Base_Class"
 
-    def __init__(self, URM_train):
+    def __init__(self, URM_train, verbose=True):
 
         super(BaseRecommender, self).__init__()
 
@@ -23,8 +24,7 @@ class BaseRecommender(object):
         self.URM_train.eliminate_zeros()
 
         self.n_users, self.n_items = self.URM_train.shape
-
-        self.normalize = False
+        self.verbose = verbose
 
         self.filterTopPop = False
         self.filterTopPop_ItemsID = np.array([], dtype=np.int)
@@ -32,6 +32,30 @@ class BaseRecommender(object):
         self.items_to_ignore_flag = False
         self.items_to_ignore_ID = np.array([], dtype=np.int)
 
+        self._cold_user_mask = np.ediff1d(self.URM_train.indptr) == 0
+
+        if self._cold_user_mask.any():
+            self._print("URM Detected {} ({:.2f} %) cold users.".format(
+                self._cold_user_mask.sum(), self._cold_user_mask.sum()/self.n_users*100))
+
+
+        self._cold_item_mask = np.ediff1d(self.URM_train.tocsc().indptr) == 0
+
+        if self._cold_item_mask.any():
+            self._print("URM Detected {} ({:.2f} %) cold items.".format(
+                self._cold_item_mask.sum(), self._cold_item_mask.sum()/self.n_items*100))
+
+
+    def _get_cold_user_mask(self):
+        return self._cold_user_mask
+
+    def _get_cold_item_mask(self):
+        return self._cold_item_mask
+
+
+    def _print(self, string):
+        if self.verbose:
+            print("{}: {}".format(self.RECOMMENDER_NAME, string))
 
     def fit(self):
         pass
@@ -44,20 +68,33 @@ class BaseRecommender(object):
         assert self.URM_train.shape == URM_train_new.shape, "{}: set_URM_train old and new URM train have different shapes".format(self.RECOMMENDER_NAME)
 
         if len(kwargs)>0:
-            print("{}: set_URM_train keyword arguments not supported for this recommender class. Received: {}".format(self.RECOMMENDER_NAME, kwargs))
+            self._print("set_URM_train keyword arguments not supported for this recommender class. Received: {}".format(kwargs))
 
-        self.URM_train = URM_train_new.copy()
+        self.URM_train = check_matrix(URM_train_new.copy(), 'csr', dtype=np.float32)
+        self.URM_train.eliminate_zeros()
+
+        self._cold_user_mask = np.ediff1d(self.URM_train.indptr) == 0
+
+        if self._cold_user_mask.any():
+            self._print("Detected {} ({:.2f} %) cold users.".format(
+                self._cold_user_mask.sum(), self._cold_user_mask.sum()/len(self._cold_user_mask)*100))
+
 
 
     def set_items_to_ignore(self, items_to_ignore):
-
         self.items_to_ignore_flag = True
         self.items_to_ignore_ID = np.array(items_to_ignore, dtype=np.int)
 
     def reset_items_to_ignore(self):
-
         self.items_to_ignore_flag = False
         self.items_to_ignore_ID = np.array([], dtype=np.int)
+
+
+    #########################################################################################################
+    ##########                                                                                     ##########
+    ##########                     COMPUTE AND FILTER RECOMMENDATION LIST                          ##########
+    ##########                                                                                     ##########
+    #########################################################################################################
 
 
     def _remove_TopPop_on_scores(self, scores_batch):
@@ -65,7 +102,7 @@ class BaseRecommender(object):
         return scores_batch
 
 
-    def _remove_CustomItems_on_scores(self, scores_batch):
+    def _remove_custom_items_on_scores(self, scores_batch):
         scores_batch[:, self.items_to_ignore_ID] = -np.inf
         return scores_batch
 
@@ -80,43 +117,6 @@ class BaseRecommender(object):
         return scores
 
 
-
-    def _get_temp_folder(self, custom_temp_folder = None):
-        """
-        The function returns the path of a folder in result_experiments
-        The function guarantees that the folder is not already existent and it creates it
-        :return:
-        """
-
-        if custom_temp_folder is None:
-
-            default_temp_folder_name = "./result_experiments/__Temp_{}".format(self.RECOMMENDER_NAME)
-            progressive_temp_folder_name = default_temp_folder_name
-
-            counter_suffix = 0
-
-            while os.path.isdir(progressive_temp_folder_name):
-
-                counter_suffix += 1
-                progressive_temp_folder_name = default_temp_folder_name + "_" + str(counter_suffix)
-
-            os.makedirs(progressive_temp_folder_name)
-
-            print("{}: Using default Temp folder '{}'".format(self.RECOMMENDER_NAME, progressive_temp_folder_name))
-
-            return progressive_temp_folder_name
-
-        else:
-
-            if not os.path.isdir(custom_temp_folder):
-                os.makedirs(custom_temp_folder)
-
-            print("{}: Using custom Temp folder '{}'".format(self.RECOMMENDER_NAME, custom_temp_folder))
-
-            return custom_temp_folder
-
-
-
     def _compute_item_score(self, user_id_array, items_to_compute = None):
         """
 
@@ -128,12 +128,8 @@ class BaseRecommender(object):
         raise NotImplementedError("BaseRecommender: compute_item_score not assigned for current recommender, unable to compute prediction scores")
 
 
-
-
-
-
     def recommend(self, user_id_array, cutoff = None, remove_seen_flag=True, items_to_compute = None,
-                  remove_top_pop_flag = False, remove_CustomItems_flag = False, return_scores = False):
+                  remove_top_pop_flag = False, remove_custom_items_flag = False, return_scores = False):
 
         # If is a scalar transform it in a 1-cell array
         if np.isscalar(user_id_array):
@@ -141,7 +137,6 @@ class BaseRecommender(object):
             single_user = True
         else:
             single_user = False
-
 
         if cutoff is None:
             cutoff = self.URM_train.shape[1] - 1
@@ -187,8 +182,8 @@ class BaseRecommender(object):
         if remove_top_pop_flag:
             scores_batch = self._remove_TopPop_on_scores(scores_batch)
 
-        if remove_CustomItems_flag:
-            scores_batch = self._remove_CustomItems_on_scores(scores_batch)
+        if remove_custom_items_flag:
+            scores_batch = self._remove_custom_items_on_scores(scores_batch)
 
         # relevant_items_partition is block_size x cutoff
         relevant_items_partition = (-scores_batch).argpartition(cutoff, axis=1)[:,0:cutoff]
@@ -228,28 +223,31 @@ class BaseRecommender(object):
 
 
 
+    #########################################################################################################
+    ##########                                                                                     ##########
+    ##########                                LOAD AND SAVE                                        ##########
+    ##########                                                                                     ##########
+    #########################################################################################################
 
 
 
-    def saveModel(self, folder_path, file_name = None):
-        raise NotImplementedError("BaseRecommender: saveModel not implemented")
+    def save_model(self, folder_path, file_name = None):
+        raise NotImplementedError("BaseRecommender: save_model not implemented")
 
 
 
 
-    def loadModel(self, folder_path, file_name = None):
+    def load_model(self, folder_path, file_name = None):
 
         if file_name is None:
             file_name = self.RECOMMENDER_NAME
 
-        print("{}: Loading model from file '{}'".format(self.RECOMMENDER_NAME, folder_path + file_name))
+        self._print("Loading model from file '{}'".format(folder_path + file_name))
 
-
-        data_dict = pickle.load(open(folder_path + file_name, "rb"))
+        dataIO = DataIO(folder_path=folder_path)
+        data_dict = dataIO.load_data(file_name=file_name)
 
         for attrib_name in data_dict.keys():
              self.__setattr__(attrib_name, data_dict[attrib_name])
 
-
-        print("{}: Loading complete".format(self.RECOMMENDER_NAME))
-
+        self._print("Loading complete")
