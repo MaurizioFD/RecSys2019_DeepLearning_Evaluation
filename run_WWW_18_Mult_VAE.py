@@ -41,7 +41,7 @@ from ParameterTuning.SearchAbstractClass import SearchInputRecommenderArgs
 def runParameterSearch_cold_user_MF(recommender_class, URM_train, URM_train_last_test = None, metric_to_optimize = "PRECISION",
                                      evaluator_validation = None, evaluator_test = None, evaluator_validation_earlystopping = None,
                                      output_folder_path ="result_experiments/",
-                                     n_cases = 35, n_random_starts = 5):
+                                     n_cases = 35, n_random_starts = 5, resume_from_saved = True):
 
 
 
@@ -206,7 +206,7 @@ def runParameterSearch_cold_user_MF(recommender_class, URM_train, URM_train_last
                                output_folder_path = output_folder_path,
                                output_file_name_root = output_file_name_root,
                                metric_to_optimize = metric_to_optimize,
-                               resume_from_saved = True,
+                               resume_from_saved = resume_from_saved,
                                recommender_input_args_last_test = recommender_input_args_last_test)
 
 
