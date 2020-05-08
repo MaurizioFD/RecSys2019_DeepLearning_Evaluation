@@ -20,8 +20,8 @@ class UserKNN_CFCBF_Hybrid_Recommender(UserKNNCBFRecommender, BaseSimilarityMatr
 
     def fit(self, UCM_weight = 1.0, **fit_args):
 
-        self.UCM = self.UCM*UCM_weight
-        self.UCM = sps.hstack([self.UCM, self.URM_train], format='csr')
+        self.UCM_train = self.UCM_train*UCM_weight
+        self.UCM_train = sps.hstack([self.UCM_train, self.URM_train], format='csr')
 
         super(UserKNN_CFCBF_Hybrid_Recommender, self).fit(**fit_args)
 

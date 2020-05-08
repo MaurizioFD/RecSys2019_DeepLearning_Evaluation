@@ -37,8 +37,16 @@ def read_data_split_and_search(dataset_name,
 
     #Logger(path=result_folder_path, name_file='CoupledCF_' + dataset_name)
 
-    if dataset_name == "movielens1m":
-        dataset = Movielens1MReader(result_folder_path, type ='original')
+    if dataset_name.startswith("movielens1m"):
+
+        if dataset_name.endswith("_original"):
+            dataset = Movielens1MReader(result_folder_path, type ='original')
+        elif dataset_name.endswith("_ours"):
+            dataset = Movielens1MReader(result_folder_path, type ='ours')
+        else:
+            print("Dataset name not supported, current is {}".format(dataset_name))
+            return
+
 
         UCM_to_report = ["UCM_all"]
         ICM_to_report = ["ICM_all"]
@@ -47,8 +55,15 @@ def read_data_split_and_search(dataset_name,
         ICM_CoupledCF = dataset.ICM_DICT["ICM_all"]
 
 
-    elif dataset_name == "tafeng":
-        dataset = TafengReader(result_folder_path, type ='original')
+    elif dataset_name.startswith("tafeng"):
+
+        if dataset_name.endswith("_original"):
+            dataset = TafengReader(result_folder_path, type ='original')
+        elif dataset_name.endswith("_ours"):
+            dataset = TafengReader(result_folder_path, type ='ours')
+        else:
+            print("Dataset name not supported, current is {}".format(dataset_name))
+            return
 
         UCM_to_report = ["UCM_all"]
         ICM_to_report = ["ICM_original"]
@@ -408,8 +423,7 @@ if __name__ == '__main__':
 
     KNN_similarity_to_report_list = ["cosine", "dice", "jaccard", "asymmetric", "tversky"]
 
-    # dataset_list = ['movielens1m_original', 'movielens1m_ours', 'tafeng_original', 'tafeng_ours']
-    dataset_list = ['movielens1m', 'tafeng']
+    dataset_list = ['movielens1m_original', 'movielens1m_ours', 'tafeng_original', 'tafeng_ours']
 
 
     for dataset_name in dataset_list:

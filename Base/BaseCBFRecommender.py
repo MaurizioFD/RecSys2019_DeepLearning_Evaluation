@@ -36,10 +36,6 @@ class BaseItemCBFRecommender(_BaseRecommender):
                 self.RECOMMENDER_NAME, self._cold_item_CBF_mask.sum(), self._cold_item_CBF_mask.sum()/self.n_items*100))
 
 
-    def _get_cold_item_mask(self):
-        return self._cold_item_CBF_mask
-
-
 
 
 
@@ -67,6 +63,3 @@ class BaseUserCBFRecommender(_BaseRecommender):
                 self.RECOMMENDER_NAME, self._cold_user_CBF_mask.sum(), self._cold_user_CBF_mask.sum()/self.n_users*100))
 
 
-
-    def _get_cold_user_mask(self):
-        return self._cold_user_CBF_mask

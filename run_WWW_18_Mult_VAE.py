@@ -196,7 +196,7 @@ def runParameterSearch_cold_user_MF(recommender_class, URM_train, URM_train_last
         parameterSearch = SearchBayesianSkopt(MF_cold_user_wrapper, evaluator_validation=evaluator_validation, evaluator_test=evaluator_test)
 
         hyperparameters_range_dictionary["estimate_model_for_cold_users"] = Categorical(["itemKNN", "mean_item_factors"])
-
+        hyperparameters_range_dictionary["estimate_model_for_cold_users_topK"] = Integer(5, 1000)
 
         ## Final step, after the hyperparameter range has been defined for each type of algorithm
         parameterSearch.search(recommender_input_args,
@@ -482,8 +482,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--DL_article_default',   help="Train the DL model with article hyperparameters", type = bool, default = False)
     parser.add_argument('-p', '--print_results',        help="Print results", type = bool, default = True)
 
-
-    parser.add_argument('-m', '--MF_baseline_tune',        help="Matrix Factorization hyperparameter search", type = bool, default = False)
+    parser.add_argument('-m', '--MF_baseline_tune',     help="Matrix Factorization hyperparameter search", type = bool, default = False)
 
     input_flags = parser.parse_args()
     print(input_flags)
