@@ -70,7 +70,7 @@ The following similarities are available for all KNN models: cosine, adjusted co
 The folder _Base.Evaluation_ contains the two evaluator objects (_EvaluatorHoldout_, _EvaluatorNegativeSample_) which compute all the metrics we report.
 
 #### Data
-The data to be used for each experiments is gathered from specific _DataReader_ objects withing each DL algoritm's folder. 
+The data to be used for each experiment is gathered from specific _DataReader_ objects within each DL algoritm's folder. 
 Those will load the original data split, if available. If not, automatically download the dataset and perform the split with the appropriate methodology. If the dataset cannot be downloaded automatically, a console message will display the link at which the dataset can be manually downloaded and instructions on where the user should save the compressed file.
 The data of ConvNCF cannot be automatically handled and should be manually downloaded [HERE](https://polimi365-my.sharepoint.com/:u:/g/personal/10322330_polimi_it/EbAK6lYNM6NMh-b5tDUDC-kBxGLQkLmQYm0dXWuHaykQrQ?e=IOzbTW) and decompressed in folder "Conferences/IJCAI/ConvNCF_github/Data". 
 
