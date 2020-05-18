@@ -178,7 +178,6 @@ def get_model_1(num_users, num_items):
     merge_attr_embedding = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[1, 2]))(
         [user_attr_embedding, item_attr_embedding])
 
-    merge_attr_embedding_global = Flatten()(merge_attr_embedding)
     merge_attr_embedding = Reshape((8, 8, 1))(merge_attr_embedding)
 
     merge_attr_embedding = Conv2D(8, (3, 3))(merge_attr_embedding)
@@ -197,7 +196,6 @@ def get_model_1(num_users, num_items):
     merge_attr_embedding = Activation('relu')(merge_attr_embedding)
 
     merge_attr_embedding = Flatten()(merge_attr_embedding)
-    merge_attr_embedding = merge([merge_attr_embedding, merge_attr_embedding_global], mode='concat')
 
     attr_1 = Dense(16)(merge_attr_embedding)
     attr_1 = Activation('relu')(attr_1)
