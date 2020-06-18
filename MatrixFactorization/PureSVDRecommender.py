@@ -35,7 +35,7 @@ class PureSVDRecommender(BaseMatrixFactorizationRecommender):
 
         self._print("Computing SVD decomposition...")
 
-        U, Sigma, VT = randomized_svd(self.URM_train,
+        U, Sigma, QT = randomized_svd(self.URM_train,
                                       n_components=num_factors,
                                       #n_iter=5,
                                       random_state = random_seed)
@@ -43,7 +43,7 @@ class PureSVDRecommender(BaseMatrixFactorizationRecommender):
         U_s = U * sps.diags(Sigma)
 
         self.USER_factors = U_s
-        self.ITEM_factors = VT.T
+        self.ITEM_factors = QT.T
 
         self._print("Computing SVD decomposition... Done!")
 
@@ -133,7 +133,7 @@ class PureSVDItemRecommender(BaseItemSimilarityMatrixRecommender):
 
         self._print("Computing SVD decomposition...")
 
-        U, Sigma, VT = randomized_svd(self.URM_train,
+        U, Sigma, QT = randomized_svd(self.URM_train,
                                       n_components=num_factors,
                                       #n_iter=5,
                                       random_state = random_seed)
@@ -141,8 +141,7 @@ class PureSVDItemRecommender(BaseItemSimilarityMatrixRecommender):
         if topK is None:
             topK = self.n_items
 
-        ITEM_factors = VT.T
-        W_sparse = compute_W_sparse_from_item_latent_factors(ITEM_factors.T, topK=topK)
+        W_sparse = compute_W_sparse_from_item_latent_factors(QT.T, topK=topK)
 
         self.W_sparse = sps.csr_matrix(W_sparse)
 
