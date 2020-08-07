@@ -105,6 +105,8 @@ class SearchAbstractClass(object):
     # Available values for the save_model attribute
     _SAVE_MODEL_VALUES = ["all", "best", "last", "no"]
 
+    # Available values for the evaluate_on_test attribute
+    _EVALUATE_ON_TEST_VALUES = ["all", "best", "last", "no"]
 
     # Value to be assigned to invalid configuration or if an Exception is raised
     INVALID_CONFIG_VALUE = np.finfo(np.float16).max
@@ -139,7 +141,7 @@ class SearchAbstractClass(object):
                output_file_name_root = None,
                parallelize = False,
                save_model = "best",
-               evaluate_on_test_each_best_solution = True,
+               evaluate_on_test = "best",
                save_metadata = True,
                ):
 
@@ -154,12 +156,16 @@ class SearchAbstractClass(object):
                                resume_from_saved,
                                save_metadata,
                                save_model,
-                               evaluate_on_test_each_best_solution,
+                               evaluate_on_test,
                                n_cases):
 
 
         if save_model not in self._SAVE_MODEL_VALUES:
            raise ValueError("{}: parameter save_model must be in '{}', provided was '{}'.".format(self.ALGORITHM_NAME, self._SAVE_MODEL_VALUES, save_model))
+
+        if evaluate_on_test not in self._EVALUATE_ON_TEST_VALUES:
+           raise ValueError("{}: parameter evaluate_on_test must be in '{}', provided was '{}'.".format(self.ALGORITHM_NAME, self._EVALUATE_ON_TEST_VALUES, evaluate_on_test))
+
 
         self.output_folder_path = output_folder_path
         self.output_file_name_root = output_file_name_root
@@ -179,10 +185,10 @@ class SearchAbstractClass(object):
         self.recommender_input_args = recommender_input_args
         self.recommender_input_args_last_test = recommender_input_args_last_test
         self.metric_to_optimize = metric_to_optimize
-        self.save_model = save_model
         self.resume_from_saved = resume_from_saved
         self.save_metadata = save_metadata
-        self.evaluate_on_test_each_best_solution = evaluate_on_test_each_best_solution
+        self.save_model = save_model
+        self.evaluate_on_test = "no" if self.evaluator_test is None else evaluate_on_test
 
         self.model_counter = 0
         self._init_metadata_dict(n_cases = n_cases)
@@ -330,16 +336,17 @@ class SearchAbstractClass(object):
                                  **fit_keyword_args)
 
         train_time = time.time() - start_time
-
-        result_dict_test, result_string, evaluation_test_time = self._evaluate_on_test(recommender_instance, fit_keyword_args, print_log = False)
-
-        self._write_log("{}: Best config evaluated with evaluator_test with constructor data for final test. Config: {} - results:\n{}\n".format(self.ALGORITHM_NAME,
-                                                                                                                                          self.metadata_dict["hyperparameters_best"],
-                                                                                                                                          result_string))
-
-        self.metadata_dict["result_on_last"] = result_dict_test
         self.metadata_dict["time_on_last_train"] = train_time
-        self.metadata_dict["time_on_last_test"] = evaluation_test_time
+
+        if self.evaluate_on_test in ["all", "best", "last"]:
+            result_dict_test, result_string, evaluation_test_time = self._evaluate_on_test(recommender_instance, fit_keyword_args, print_log = False)
+
+            self._write_log("{}: Best config evaluated with evaluator_test with constructor data for final test. Config: {} - results:\n{}\n".format(self.ALGORITHM_NAME,
+                                                                                                                                              self.metadata_dict["hyperparameters_best"],
+                                                                                                                                              result_string))
+            self.metadata_dict["result_on_last"] = result_dict_test
+            self.metadata_dict["time_on_last_test"] = evaluation_test_time
+
 
         if self.save_metadata:
             self.dataIO.save_data(data_dict_to_save = self.metadata_dict.copy(),
@@ -401,11 +408,15 @@ class SearchAbstractClass(object):
                     recommender_instance.save_model(self.output_folder_path, file_name =self.output_file_name_root + "_best_model")
 
 
-                if self.evaluator_test is not None and self.evaluate_on_test_each_best_solution:
+                if self.evaluate_on_test in ["all", "best"]:
                     result_dict_test, _, evaluation_test_time = self._evaluate_on_test(recommender_instance, current_fit_parameters_dict, print_log = True)
 
 
             else:
+
+                if self.evaluate_on_test in ["all"]:
+                    result_dict_test, _, evaluation_test_time = self._evaluate_on_test(recommender_instance, current_fit_parameters_dict, print_log = True)
+
                 self._write_log("{}: Config {} is suboptimal. Config: {} - results: {}\n".format(self.ALGORITHM_NAME,
                                                                                           self.model_counter,
                                                                                           current_fit_parameters_dict,
@@ -435,13 +446,13 @@ class SearchAbstractClass(object):
                 self.metadata_dict["hyperparameters_best_index"] = self.model_counter
                 self.metadata_dict["result_on_validation_best"] = result_dict.copy()
 
-                if self.evaluator_test is not None and self.evaluate_on_test_each_best_solution:
-                    self.metadata_dict["result_on_test_best"] = result_dict_test.copy()
-                    self.metadata_dict["result_on_test_list"][self.model_counter] = result_dict_test.copy()
-                    self.metadata_dict["time_on_test_list"][self.model_counter] = evaluation_test_time
+            if (new_best_config_found and self.evaluate_on_test in ["best"]) or self.evaluate_on_test in ["all"]:
+                self.metadata_dict["result_on_test_best"] = result_dict_test.copy()
+                self.metadata_dict["result_on_test_list"][self.model_counter] = result_dict_test.copy()
+                self.metadata_dict["time_on_test_list"][self.model_counter] = evaluation_test_time
 
-                    self.metadata_dict["time_on_test_total"], self.metadata_dict["time_on_test_avg"] = \
-                        _compute_avg_time_non_none_values(self.metadata_dict["time_on_test_list"])
+                self.metadata_dict["time_on_test_total"], self.metadata_dict["time_on_test_avg"] = \
+                    _compute_avg_time_non_none_values(self.metadata_dict["time_on_test_list"])
 
 
         except (KeyboardInterrupt, SystemExit) as e:

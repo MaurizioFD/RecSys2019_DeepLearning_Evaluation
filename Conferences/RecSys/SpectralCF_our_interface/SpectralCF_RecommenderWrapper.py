@@ -212,7 +212,7 @@ class SpectralCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_
         self.load_model(self.temp_file_folder, file_name="_best_model")
 
 
-        print("SpectralCF_RecommenderWrapper: Tranining complete")
+        self._print("Training complete")
 
 
         self._clean_temp_folder(temp_file_folder=self.temp_file_folder)

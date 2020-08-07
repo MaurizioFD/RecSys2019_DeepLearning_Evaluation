@@ -19,7 +19,7 @@ from keras.regularizers import l1, l2
 from keras.models import Model, load_model, save_model, clone_model
 from keras.layers import Embedding, Input, Dense, Reshape, Flatten, Dropout, Concatenate, Multiply
 from keras.optimizers import Adagrad, Adam, SGD, RMSprop
-
+from keras.backend import clear_session
 
 
 def MLP_get_model(num_users, num_items, layers = [20,10], reg_layers=[0,0]):
@@ -233,12 +233,18 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
 
         return item_scores
 
+    def get_USER_embeddings(self):
+        return self.model.get_weights()[2]
+
+
+    def get_ITEM_embeddings(self):
+        return self.model.get_weights()[3]
 
     def get_early_stopping_final_epochs_dict(self):
         """
         This function returns a dictionary to be used as optimal parameters in the .fit() function
         It provides the flexibility to deal with multiple early-stopping in a single algorithm
-        e.g. in NeuMF there are three model componets each with its own optimal number of epochs
+        e.g. in NeuMF there are three model components each with its own optimal number of epochs
         the return dict would be {"epochs": epochs_best_neumf, "epochs_gmf": epochs_best_gmf, "epochs_mlp": epochs_best_mlp}
         :return:
         """
@@ -283,6 +289,7 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
         :return:
         """
 
+        clear_session()
 
         self.batch_size = batch_size
         self.mf_dim = num_factors
@@ -371,7 +378,7 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
                                         **earlystopping_kwargs)
 
 
-        print("NeuMF_RecommenderWrapper: Tranining complete")
+        self._print("Training complete")
 
         self.model = deep_clone_model(self._best_model)
 
@@ -393,8 +400,9 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
         user_input, item_input, labels = get_train_instances(self._train, self.num_negatives, self.n_items)
 
         # Training
-        hist = self.model.fit([np.array(user_input), np.array(item_input)], #input
-                         np.array(labels), # labels
+        hist = self.model.fit([np.array(user_input).astype(np.int32),
+                               np.array(item_input).astype(np.int32)], #input
+                         np.array(labels).astype(np.int32), # labels
                          batch_size=self.batch_size, epochs=1, verbose=0, shuffle=True)
 
         print("NeuMF_RecommenderWrapper: Epoch {}, loss {:.2E}".format(currentEpoch+1, hist.history['loss'][0]))
@@ -458,6 +466,7 @@ class NeuMF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
         for attrib_name in data_dict.keys():
              self.__setattr__(attrib_name, data_dict[attrib_name])
 
+        clear_session()
 
         self.model = NeuCF_get_model(self.n_users, self.n_items, self.mf_dim, self.layers, self.reg_layers, self.reg_mf)
         self.model.load_weights(folder_path + file_name + "_weights")

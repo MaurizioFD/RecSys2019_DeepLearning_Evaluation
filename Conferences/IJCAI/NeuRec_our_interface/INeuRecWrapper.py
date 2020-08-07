@@ -96,7 +96,7 @@ class INeuRec_RecommenderWrapper(BaseMatrixFactorizationRecommender, Incremental
         self.USER_factors = self.USER_factors_best
         self.ITEM_factors = self.ITEM_factors_best
 
-        print("{}: Tranining complete".format(self.RECOMMENDER_NAME))
+        self._print("Training complete")
 
 
 

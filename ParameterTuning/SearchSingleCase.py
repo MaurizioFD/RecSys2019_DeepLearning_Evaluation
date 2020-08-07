@@ -75,7 +75,7 @@ class SearchSingleCase(SearchAbstractClass):
                recommender_input_args_last_test = None,
                resume_from_saved = False,
                save_model = "best",
-               evaluate_on_test_each_best_solution = True,
+               evaluate_on_test = "best",
                ):
 
 
@@ -91,7 +91,7 @@ class SearchSingleCase(SearchAbstractClass):
                                     resume_from_saved,
                                     save_metadata,
                                     save_model,
-                                    evaluate_on_test_each_best_solution,
+                                    evaluate_on_test,
                                     n_cases)
 
 

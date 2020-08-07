@@ -10,7 +10,6 @@ import numpy as np
 import scipy.sparse as sps
 import Data_manager.Utility as ut
 
-#from Data_manager.Simone.Yelp.YelpReader import YelpReader as YelpReader_DataManager
 from Data_manager.load_and_save_data import save_data_dict_zip, load_data_dict_zip
 from Data_manager.IncrementalSparseMatrix import IncrementalSparseMatrix
 from Data_manager.split_functions.split_train_validation import split_train_validation_leave_one_out_user_wise

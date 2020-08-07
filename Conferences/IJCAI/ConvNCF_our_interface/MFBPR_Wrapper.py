@@ -63,11 +63,11 @@ class ArgsInterface:
 
 
 import platform
-from Base.BaseRecommender import BaseRecommender
+from Base.BaseMatrixFactorizationRecommender import BaseMatrixFactorizationRecommender
 from Base.Incremental_Training_Early_Stopping import Incremental_Training_Early_Stopping
 from Base.DataIO import DataIO
 
-class MFBPR_Wrapper(BaseRecommender, Incremental_Training_Early_Stopping):
+class MFBPR_Wrapper(BaseMatrixFactorizationRecommender, Incremental_Training_Early_Stopping):
 
     RECOMMENDER_NAME = "MF_BPR_Wrapper"
 
@@ -84,76 +84,7 @@ class MFBPR_Wrapper(BaseRecommender, Incremental_Training_Early_Stopping):
 
 
 
-
-    def _compute_item_score(self, user_id_array, items_to_compute = None):
-
-        if items_to_compute is None:
-            item_indices = self._item_indices
-        else:
-            item_indices = items_to_compute
-
-        item_scores = - np.ones((len(user_id_array), self.n_items)) * np.inf
-
-
-        for user_index in range(len(user_id_array)):
-
-            user_id = user_id_array[user_index]
-
-            user_input = np.full(len(item_indices), user_id, dtype='int32')[:, None]
-            item_input = np.array(item_indices)[:, None]
-
-            feed_dict = {MF_BPR._model.user_input: user_input,
-                         MF_BPR._model.item_input_pos: item_input}
-
-            item_score_user = self.sess.run(MF_BPR._model.output, feed_dict)
-
-
-            if items_to_compute is not None:
-                item_scores[user_index, item_indices] = item_score_user.ravel()
-            else:
-                item_scores[user_index, :] = item_score_user.ravel()
-
-        return item_scores
-
-
-
-
-
-
-    def fit(self,
-            batch_size=512,
-            epochs=500,
-            embed_size=64,
-            negative_sample_per_positive=1,
-            regularization_users=0.01,
-            regularization_items=0.0,
-            learning_rate=0.05,
-            epoch_evaluation=25,
-            train_auc_verbose=0,
-            path_partial_results = None,
-            **earlystopping_kwargs
-            ):
-
-        assert path_partial_results is not None
-        self.path_partial_results = path_partial_results
-
-        self.args = ArgsInterface()
-        self.args.dataset = 'no_dataset_name'
-        self.args.model = self.RECOMMENDER_NAME
-        self.args.verbose = epoch_evaluation
-        self.args.batch_size = batch_size
-        self.args.epochs = epochs
-        self.args.embed_size = embed_size
-        self.args.dns = negative_sample_per_positive
-        self.args.regs = [regularization_users, regularization_items]
-        self.args.task = ''
-        self.args.lr = learning_rate
-        self.args.pretrain = 0
-        self.args.ckpt = 0
-        self.args.train_auc = train_auc_verbose
-        self.args.path_partial_results = path_partial_results
-
-        self._print("Start training...")
+    def _init_model(self):
 
         MF_BPR.tf.reset_default_graph()
 
@@ -166,14 +97,51 @@ class MFBPR_Wrapper(BaseRecommender, Incremental_Training_Early_Stopping):
         self.model_GMF = MF_BPR.GMF(self.dataset.num_users, self.dataset.num_items, self.args)
         self.model_GMF.build_graph()
 
-        # MF_BPR.training(model=self.model_GMF, dataset=self.dataset, args=self.args)
-
         self.sess = MF_BPR.tf.Session()
         self.sess.run(MF_BPR.tf.global_variables_initializer())
 
         # sample the data
         self.samples = MF_BPR.sampling(self.dataset)
 
+
+
+
+    def fit(self,
+            batch_size=512,
+            epochs=500,
+            embed_size=64,
+            negative_sample_per_positive=1,
+            regularization_users=0.01,
+            regularization_items=0.0,
+            learning_rate=0.05,
+            epoch_verbose=25,
+            train_auc_verbose=0,
+            path_partial_results = None,
+            **earlystopping_kwargs
+            ):
+
+        assert path_partial_results is not None
+        self.path_partial_results = path_partial_results
+
+        self.args = ArgsInterface()
+        self.args.dataset = 'no_dataset_name'
+        self.args.model = self.RECOMMENDER_NAME
+        self.args.verbose = epoch_verbose
+        self.args.batch_size = batch_size
+        self.args.epochs = epochs
+        self.args.embed_size = embed_size
+        self.args.dns = negative_sample_per_positive
+        self.args.regs = [regularization_users, regularization_items]
+        self.args.task = ''
+        self.args.lr = learning_rate
+        self.args.pretrain = 0
+        self.args.ckpt = 0
+        self.args.train_auc = train_auc_verbose
+        self.args.path_partial_results = path_partial_results
+
+        self._init_model()
+
+        self._print("Start training...")
 
         self._update_best_model()
 
@@ -183,7 +151,7 @@ class MFBPR_Wrapper(BaseRecommender, Incremental_Training_Early_Stopping):
 
         self.epochs_best_MFBPR = self.epochs_best
 
-        self._print("Tranining complete")
+        self._print("Training complete")
 
         self.sess.close()
         self.load_model(self.path_partial_results, file_name="best_model")
@@ -226,6 +194,12 @@ class MFBPR_Wrapper(BaseRecommender, Incremental_Training_Early_Stopping):
 
 
     def _update_best_model(self):
+        self.model_GMF.saveParams(self.sess, "_latent_factors", self.args)
+
+        # Load latent factors
+        latent_factors = np.load(self.args.path_partial_results + "_latent_factors.npy", allow_pickle=True)
+        self.USER_factors, self.ITEM_factors = latent_factors[0], latent_factors[1]
+
         self.save_model(self.path_partial_results, file_name="best_model")
 
 
@@ -234,106 +208,6 @@ class MFBPR_Wrapper(BaseRecommender, Incremental_Training_Early_Stopping):
         # initialize for training batches
         batches = MF_BPR.shuffle(self.samples, self.args.batch_size, self.dataset, self.model_GMF)  # , args.exclude_gtItem)
 
-        # compute the accuracy before training
-        # prev_batch = batches[0], batches[1], batches[3]
-        # _, prev_acc =  MF_BPR.training_loss_acc(self.model_GMF, self.sess, prev_batch)
-
         # training the model
         _ = MF_BPR.training_batch(self.model_GMF, self.sess, batches)
-
-
-
-
-
-
-
-
-
-    def save_model(self, folder_path, file_name = None):
-
-
-        if file_name is None:
-            file_name = self.RECOMMENDER_NAME
-
-        self._print("Saving model in file '{}'".format(folder_path + file_name))
-
-        data_dict_to_save = {
-                            # 'global_var': (#MF_BPR._user_input,
-                            #                 #MF_BPR._item_input_pos,
-                            #                 #MF_BPR._batch_size,
-                            #                 #MF_BPR._index,
-                            #                 #MF_BPR._model,
-                            #                 #MF_BPR._dataset,
-                            #                 #MF_BPR._K,
-                            #                 #MF_BPR._feed_dict,
-                            #                 #MF_BPR._output,
-                            #                 # MF_BPR._exclude_gtItem,
-                            #                 MF_BPR._user_exclude_validation
-                            #                 ),
-                             **{'_args_{}'.format(key):value for (key,value) in vars(self.args).items()}
-                              }
-
-
-
-
-        dataIO = DataIO(folder_path=folder_path)
-        dataIO.save_data(file_name=file_name, data_dict_to_save = data_dict_to_save)
-
-        self.model_GMF.saveParams(self.sess, file_name + "_latent_factors", self.args)
-
-        # saver = MF_BPR.tf.train.Saver()
-        # saver.save(MF_BPR._sess, folder_path + file_name + "_session")
-
-        self._print("Saving complete")
-
-
-
-    def load_model(self, folder_path, file_name = None):
-
-
-        if file_name is None:
-            file_name = self.RECOMMENDER_NAME
-
-        self._print("Loading model from file '{}'".format(folder_path + file_name))
-
-        dataIO = DataIO(folder_path=folder_path)
-        data_dict = dataIO.load_data(file_name=file_name)
-
-        self.args = ArgsInterface()
-
-
-        for attrib_name in data_dict.keys():
-            #
-            # if attrib_name == "global_var":
-            #     MF_BPR._K, MF_BPR._feed_dict,\
-            #     MF_BPR._output, MF_BPR._user_exclude_validation = data_dict[attrib_name]
-
-            if attrib_name.startswith("_args_"):
-                data_dict_key = attrib_name
-                attrib_name = attrib_name[len("_args_"):]
-                setattr(self.args, attrib_name, data_dict[data_dict_key])
-
-            else:
-                self.__setattr__(attrib_name, data_dict[attrib_name])
-
-
-        self.dataset = DatasetInterface(URM_train = self.URM_train)
-
-        MF_BPR.tf.reset_default_graph()
-
-        # saver = MF_BPR.tf.train.Saver()
-        self.sess = MF_BPR.tf.Session()
-        # saver.restore(self.sess, folder_path + file_name + "_session")
-
-        MF_BPR._sess = self.sess
-
-        # initialize models
-        self.model_GMF = MF_BPR.GMF(self.dataset.num_users, self.dataset.num_items, self.args)
-        self.model_GMF.build_graph()
-
-        self.model_GMF.load_parameter_MF(self.sess, folder_path + file_name + "_latent_factors.npy")
-
-        self._print("Loading complete")
-
-
 

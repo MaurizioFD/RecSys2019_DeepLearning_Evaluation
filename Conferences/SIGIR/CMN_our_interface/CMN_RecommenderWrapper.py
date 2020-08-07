@@ -210,7 +210,7 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
         """
         This function returns a dictionary to be used as optimal parameters in the .fit() function
         It provides the flexibility to deal with multiple early-stopping in a single algorithm
-        e.g. in NeuMF there are three model componets each with its own optimal number of epochs
+        e.g. in NeuMF there are three model components each with its own optimal number of epochs
         the return dict would be {"epochs": epochs_best_neumf, "epochs_gmf": epochs_best_gmf, "epochs_mlp": epochs_best_mlp}
         :return:
         """
@@ -363,7 +363,7 @@ class CMN_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stoppin
                                         **earlystopping_kwargs)
 
 
-        print("CMN_RecommenderWrapper: Tranining complete")
+        self._print("Training complete")
 
 
         self.sess.close()

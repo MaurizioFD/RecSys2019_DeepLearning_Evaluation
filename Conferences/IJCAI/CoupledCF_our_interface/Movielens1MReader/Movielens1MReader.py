@@ -59,7 +59,7 @@ class Movielens1MReader():
             UCM_gender = gender.tocsr()
             UCM_age = age.tocsr()
             UCM_occupation = occupation.tocsr()
-            UCM_all = sps.hstack((UCM_gender, UCM_age, UCM_occupation))
+            UCM_all = sps.hstack((UCM_gender, UCM_age, UCM_occupation)).tocsr()
 
             ICM_all = sps.csr_matrix(items_genres_mat)
 

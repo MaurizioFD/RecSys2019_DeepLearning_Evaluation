@@ -179,6 +179,7 @@ def run_KNNRecommender_on_similarity_type(similarity_type, parameterSearch,
                                           n_random_starts,
                                           resume_from_saved,
                                           save_model,
+                                          evaluate_on_test,
                                           output_folder_path,
                                           output_file_name_root,
                                           metric_to_optimize,
@@ -224,6 +225,7 @@ def run_KNNRecommender_on_similarity_type(similarity_type, parameterSearch,
                            n_random_starts = n_random_starts,
                            resume_from_saved = resume_from_saved,
                            save_model = save_model,
+                           evaluate_on_test = evaluate_on_test,
                            output_folder_path = output_folder_path,
                            output_file_name_root = output_file_name_root + "_" + similarity_type,
                            metric_to_optimize = metric_to_optimize,
@@ -319,7 +321,7 @@ def runParameterSearch_Collaborative(recommender_class, URM_train, URM_train_las
                                      evaluator_validation = None, evaluator_test = None, evaluator_validation_earlystopping = None,
                                      output_folder_path ="result_experiments/", parallelizeKNN = True,
                                      n_cases = 35, n_random_starts = 5, resume_from_saved = False, save_model = "best",
-                                     allow_weighting = True,
+                                     allow_weighting = True, evaluate_on_test = "best",
                                      similarity_type_list = None):
 
 
@@ -379,6 +381,7 @@ def runParameterSearch_Collaborative(recommender_class, URM_train, URM_train_las
                                    output_file_name_root = output_file_name_root,
                                    resume_from_saved = resume_from_saved,
                                    save_model = save_model,
+                                   evaluate_on_test = evaluate_on_test,
                                    )
 
 
@@ -416,6 +419,7 @@ def runParameterSearch_Collaborative(recommender_class, URM_train, URM_train_las
                                                            n_random_starts = n_random_starts,
                                                            resume_from_saved = resume_from_saved,
                                                            save_model = save_model,
+                                                           evaluate_on_test = evaluate_on_test,
                                                            output_folder_path = output_folder_path,
                                                            output_file_name_root = output_file_name_root,
                                                            metric_to_optimize = metric_to_optimize,
@@ -667,6 +671,7 @@ def runParameterSearch_Collaborative(recommender_class, URM_train, URM_train_las
                                n_random_starts = n_random_starts,
                                resume_from_saved = resume_from_saved,
                                save_model = save_model,
+                               evaluate_on_test = evaluate_on_test,
                                output_folder_path = output_folder_path,
                                output_file_name_root = output_file_name_root,
                                metric_to_optimize = metric_to_optimize,

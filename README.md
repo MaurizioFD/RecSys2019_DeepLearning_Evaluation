@@ -1,28 +1,16 @@
 # DeepLearning RS Evaluation
 
-This is the repository of our article RecSys 2019 "Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches".
-The full text of the article is freely available on [ACM Digital Library](https://dl.acm.org/authorize?N684126), [ResearchGate](https://www.researchgate.net/publication/334506947_Are_We_Really_Making_Much_Progress_A_Worrying_Analysis_of_Recent_Neural_Recommendation_Approaches) or [ArXiv](https://arxiv.org/abs/1907.06902), source code of our experiments and full results are available [here](https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation).
+This repository contains the source code of the following articles:
+* **"Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches"**, **RecSys 2019** [BibTex](https://dblp.uni-trier.de/rec/bibtex/conf/recsys/DacremaCJ19).
+Full text available on [ACM DL (open)](https://dl.acm.org/authorize?N684126), [ResearchGate](https://www.researchgate.net/publication/334506947_Are_We_Really_Making_Much_Progress_A_Worrying_Analysis_of_Recent_Neural_Recommendation_Approaches) or [ArXiv](https://arxiv.org/abs/1907.06902), source code of our experiments and full results are available [here](https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation).
 The [slides](Slides/RecSys2019_DeepLearning_Evaluation_Slides.pdf) and [poster](Slides/RecSys2019_DeepLearning_Evaluation_Poster.pdf) are also available.
-
-**NEWS: The repository also includes the results of the extended version of the RecSys 2019 paper (still under review), now available on [ArXiv](https://arxiv.org/abs/1911.07698) "A Troubling Analysis of Reproducibility and Progress in Recommender Systems Research". We welcome your feedback!**
+* **"Methodological Issues in Recommender Systems Research (Extended Abstract)"**, **IJCAI 2020** [BibTex](https://dblp.uni-trier.de/rec/bibtex/conf/ijcai/DacremaCJ20), [PDF](https://www.ijcai.org/Proceedings/2020/650).
+* **"Critically Examining the Claimed Value of Convolutions over User-Item Embedding Maps for Recommender Systems"**, **CIKM 2020**  [ArXiv](https://arxiv.org/abs/2007.11893), see related documentation [HERE](#Ablation-experiment-for-CNN-algorithms-on-embeddings).
+* (Extended version of the RecSys 2019 paper, still under review) **"A Troubling Analysis of Reproducibility and Progress in Recommender Systems Research"**. The preprint is available on [ArXiv](https://arxiv.org/abs/1911.07698).
 
 We are still actively pursuing this research direction in evaluation and reproducibility, we are open to collaboration with other reseachers. Follow our project on [ResearchGate](https://www.researchgate.net/project/Recommender-systems-reproducibility-and-evaluation)!
 
-Please cite our article if you use this repository or our implementations of baseline algorithms, remember also to cite the original authors if you use our porting of the DL algorithms.
-
-```
-@Article{Ferraridacrema2019,
-author={Ferrari Dacrema, Maurizio
-and Cremonesi, Paolo
-and Jannach, Dietmar},
-title={Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches},
-journal={Proceedings of the 13th ACM Conference on Recommender Systems (RecSys 2019)},
-year={2019},
-doi={10.1145/3298689.3347058},
-Eprint={arXiv:1907.06902},
-note={Source: \url{https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation}},
-}
-```
+Please cite our articles if you use this repository or our implementations of baseline algorithms, remember also to cite the original authors if you use our porting of the DL algorithms. The BibTex code is linked above, next to the article.
 
 
 ## Full results and hyperparameters
@@ -82,14 +70,16 @@ Whenever a new dataset is downloaded and parsed, the preprocessed data is saved 
 Folder _ParameterTuning_ contains all the code required to tune the hyperparameters of the baselines. The script _run_parameter_search_ contains the fixed hyperparameters search space used in all our experiments.
 The object _SearchBayesianSkopt_ does the hyperparameter optimization for a given recommender instance and hyperparameter space, saving the explored configuration and corresponding recommendation quality. 
 
+If you want to execute ConvNCF make sure you extract the data files in folder Conferences/ConvNCF/ConvNCF_github/Data and ConvolutionRS/ConvNCF/ConvNCF_github/Data
 
 
 
-## Run the experiments
+## Run the experiments 
 
 See see the following [Installation](#Installation) section for information on how to install this repository.
 After the installation is complete you can run the experiments.
 
+### Comparison with baselines algorithms
 
 All experiments related to a DL algorithm reported in our paper can be executed by running the corresponding script, which is preceeded by _run__, the conference name and the year of publication.
 The scripts have the following boolean optional parameters (all default values are False except for the print-results flag):
@@ -111,6 +101,31 @@ The script will:
 * Run the fit and test of the DL algorithm
 * Create the latex code of the result tables, as well as plot the data splits, when required. 
 * The results can be accessed in the _result_experiments_ folder.
+
+
+
+### Ablation experiment for CNN algorithms on embeddings
+
+All experiments related to a Convolution algorithm reported in our paper can be executed by running the corresponding script, which is preceeded by _run__, the conference name and the year of publication.
+For example, if you want to run the experiments for ConvNCF, you should run this command:
+```console
+python run_IJCAI_18_ConvNCF_CNN_embeddings.py
+```
+
+The training of baselines is enabled by default, if you want to disable it use:
+```console
+python run_IJCAI_18_ConvNCF_CNN_embeddings.py --run_baselines False
+```
+
+The script will:
+* Load and split the data.
+* (if required) Run the bayesian hyperparameter optimization on all baselines, saving the best values found.
+* Run the pretraining of the embeddings, if needed.
+* Run Study 1, applying 20 permutations of the pretrained embeddings and for each evaluating the pretraining model, fitting the Convolution algorithm on the full map and evaluating it for each component: full map, diagonal (element wise), off-diagonal (embeddings correlation).
+* Run Study 2, reading the previously generated permutations and fitting the model on the specified portion of the interaction map: full map, diagonal (element wise), off-diagonal (embeddings correlation).
+* Create the latex code of the result tables.
+* The results can be accessed in the _result_experiments_ folder.
+
 
 
 

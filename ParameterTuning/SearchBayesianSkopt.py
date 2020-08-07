@@ -172,7 +172,7 @@ class SearchBayesianSkopt(SearchAbstractClass):
                save_metadata = True,
                resume_from_saved = False,
                recommender_input_args_last_test = None,
-               evaluate_on_test_each_best_solution = True,
+               evaluate_on_test = "best",
                ):
         """
 
@@ -203,7 +203,7 @@ class SearchBayesianSkopt(SearchAbstractClass):
                                     resume_from_saved,
                                     save_metadata,
                                     save_model,
-                                    evaluate_on_test_each_best_solution,
+                                    evaluate_on_test,
                                     n_cases)
 
 

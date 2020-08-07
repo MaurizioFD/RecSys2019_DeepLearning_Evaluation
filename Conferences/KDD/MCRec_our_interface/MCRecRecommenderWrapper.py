@@ -712,7 +712,7 @@ class MCRecML100k_RecommenderWrapper(BaseRecommender, Incremental_Training_Early
                                         algorithm_name = self.RECOMMENDER_NAME,
                                         **earlystopping_kwargs)
 
-        print("MCRec_RecommenderWrapper: Tranining complete")
+        self._print("Training complete")
 
         self.model = clone_model(self._best_model)
         self.model.set_weights(self._best_model.get_weights())

@@ -15,14 +15,12 @@ from Base.DataIO import DataIO
 
 from keras.optimizers import Adam
 from keras import utils, models
+import numpy as np
 
 from Conferences.IJCAI.CoupledCF_our_interface import mainMovieUserCnn
 from Conferences.IJCAI.CoupledCF_our_interface import mainTafengUserCnn
 from Conferences.IJCAI.CoupledCF_our_interface.mainMovieUserCnn import get_train_instances
 from Base.BaseTempFolder import BaseTempFolder
-
-from Conferences.IJCAI.CoupledCF_original.LoadMovieDataCnn import *
-
 
 class CoupledCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopping, BaseTempFolder):
 
@@ -176,7 +174,7 @@ class CoupledCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_S
 
         self.load_model(self.temp_file_folder, file_name="_best_model")
 
-        print("{}: Tranining complete".format(self.RECOMMENDER_NAME))
+        self._print("Training complete")
         self._clean_temp_folder(temp_file_folder=self.temp_file_folder)
 
 

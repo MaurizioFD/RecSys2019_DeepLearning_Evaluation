@@ -85,7 +85,7 @@ class ConvNCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Sto
         """
         This function returns a dictionary to be used as optimal parameters in the .fit() function
         It provides the flexibility to deal with multiple early-stopping in a single algorithm
-        e.g. in NeuMF there are three model componets each with its own optimal number of epochs
+        e.g. in NeuMF there are three model components each with its own optimal number of epochs
         the return dict would be {"epochs": epochs_best_neumf, "epochs_gmf": epochs_best_gmf, "epochs_mlp": epochs_best_mlp}
         :return:
         """
@@ -258,7 +258,7 @@ class ConvNCF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Sto
 
         self.load_model(self.temp_file_folder, file_name="_best_model")
 
-        print("{}: Training complete".format(self.RECOMMENDER_NAME))
+        self._print("Training complete")
 
         self._clean_temp_folder(temp_file_folder=self.temp_file_folder)
 

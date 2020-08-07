@@ -140,7 +140,7 @@ class _DELF_RecommenderWrapper(BaseRecommender, Incremental_Training_Early_Stopp
 
         self.load_model(self.temp_file_folder, file_name="_best_model")
 
-        print("{}: Tranining complete".format(self.RECOMMENDER_NAME))
+        self._print("Training complete")
 
         self._clean_temp_folder(temp_file_folder=self.temp_file_folder)
 
