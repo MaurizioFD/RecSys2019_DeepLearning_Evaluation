@@ -195,6 +195,10 @@ class Evaluator(object):
 
             users_to_evaluate_mask = np.logical_or(users_to_evaluate_mask, new_mask)
 
+        if not np.all(users_to_evaluate_mask):
+            self._print("Ignoring {} ({:.2f}%) Users that have less than {} test interactions".format(np.sum(users_to_evaluate_mask),
+                                                                                                     100*np.sum(np.logical_not(users_to_evaluate_mask))/len(users_to_evaluate_mask), min_ratings_per_user))
+
         self.users_to_evaluate = np.arange(self.n_users)[users_to_evaluate_mask]
 
         if ignore_users is not None:

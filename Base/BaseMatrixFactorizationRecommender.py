@@ -88,7 +88,6 @@ class BaseMatrixFactorizationRecommender(BaseRecommender):
         data_dict_to_save = {"USER_factors": self.USER_factors,
                               "ITEM_factors": self.ITEM_factors,
                               "use_bias": self.use_bias,
-                              "_cold_user_mask": self._cold_user_mask,
                             }
 
         if self.use_bias:

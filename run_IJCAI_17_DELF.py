@@ -8,6 +8,7 @@ Created on 06/07/19
 
 import numpy as np
 import os, traceback, argparse
+import scipy.sparse as sps
 from functools import partial
 from Utils.plot_popularity import plot_popularity_bias, save_popularity_statistics
 
@@ -54,7 +55,11 @@ def cold_items_statistics(URM_train, URM_validation, URM_test, URM_test_negative
 
 
 
+def get_cold_items(URM):
 
+    cold_items_flag = np.ediff1d(sps.csc_matrix(URM).indptr) == 0
+
+    return np.arange(0, URM.shape[1])[cold_items_flag]
 
 
 def read_data_split_and_search(dataset_name,
@@ -68,14 +73,21 @@ def read_data_split_and_search(dataset_name,
         os.makedirs(result_folder_path)
 
 
-    if 'amazon_music' in dataset_name:
-        dataset = AmazonMusicReader(result_folder_path)
+    # Ensure both experiments use the same data
+    dataset_folder_path = "result_experiments/{}/{}_{}/".format(CONFERENCE_NAME, ALGORITHM_NAME,
+                                                                dataset_name.replace("_remove_cold_items", ""))
 
-    elif 'movielens1m' in dataset_name:
-        dataset = Movielens1MReader(result_folder_path, type ="ours")
+    if not os.path.exists(dataset_folder_path):
+        os.makedirs(dataset_folder_path)
+
+    if 'amazon_music' in dataset_name:
+        dataset = AmazonMusicReader(dataset_folder_path)
+
+    elif 'movielens1m_ours' in dataset_name:
+        dataset = Movielens1MReader(dataset_folder_path, type ="ours")
 
     elif 'movielens1m_original' in dataset_name:
-        dataset = Movielens1MReader(result_folder_path, type ="original")
+        dataset = Movielens1MReader(dataset_folder_path, type ="original")
 
     else:
         print("Dataset name not supported, current is {}".format(dataset_name))
@@ -101,11 +113,11 @@ def read_data_split_and_search(dataset_name,
     algorithm_dataset_string = "{}_{}_".format(ALGORITHM_NAME, dataset_name)
 
     plot_popularity_bias([URM_train + URM_validation, URM_test],
-                         ["Train data", "Test data"],
+                         ["Training data", "Test data"],
                          result_folder_path + algorithm_dataset_string + "popularity_plot")
 
     save_popularity_statistics([URM_train + URM_validation + URM_test, URM_train + URM_validation, URM_test],
-                               ["Full data", "Train data", "Test data"],
+                               ["Full data", "Training data", "Test data"],
                                result_folder_path + algorithm_dataset_string + "popularity_statistics")
 
 
@@ -135,9 +147,21 @@ def read_data_split_and_search(dataset_name,
     cutoff_list_validation = [10]
     cutoff_list_test = [5, 10, 20]
 
-    evaluator_validation = EvaluatorNegativeItemSample(URM_validation, URM_test_negative, cutoff_list=cutoff_list_validation)
-    evaluator_test = EvaluatorNegativeItemSample(URM_test, URM_test_negative, cutoff_list=cutoff_list_test)
+    if "_remove_cold_items" in dataset_name:
+        ignore_items_validation = get_cold_items(URM_train)
+        ignore_items_test = get_cold_items(URM_train + URM_validation)
+    else:
+        ignore_items_validation = None
+        ignore_items_test = None
 
+    evaluator_validation = EvaluatorNegativeItemSample(URM_validation, URM_test_negative, cutoff_list=cutoff_list_validation, ignore_items=ignore_items_validation)
+    evaluator_test = EvaluatorNegativeItemSample(URM_test, URM_test_negative, cutoff_list=cutoff_list_test, ignore_items=ignore_items_test)
+
+    # The Evaluator automatically skips users with no test interactions
+    # in this case we need the evaluation done with and without cold items to be comparable
+    # So we ensure the users that are included in the evaluation are the same in both cases.
+    evaluator_validation.users_to_evaluate = np.arange(URM_train.shape[0])
+    evaluator_test.users_to_evaluate = np.arange(URM_train.shape[0])
 
     runParameterSearch_Collaborative_partial = partial(runParameterSearch_Collaborative,
                                                        URM_train = URM_train,
@@ -289,7 +313,7 @@ if __name__ == '__main__':
     
     KNN_similarity_to_report_list = ["cosine", "dice", "jaccard", "asymmetric", "tversky"]
 
-    dataset_list = ['amazon_music', 'movielens1m']
+    dataset_list = ['amazon_music', 'movielens1m_ours', 'amazon_music_remove_cold_items', 'movielens1m_ours_remove_cold_items']
 
     for dataset_name in dataset_list:
         read_data_split_and_search(dataset_name,

@@ -415,7 +415,7 @@ def read_data_split_and_search(dataset_name,
 
         result_loader.generate_latex_results(file_name + "{}_latex_results.txt".format("beyond_accuracy_metrics"),
                                            metrics_list = ["DIVERSITY_MEAN_INTER_LIST", "DIVERSITY_HERFINDAHL", "COVERAGE_ITEM", "DIVERSITY_GINI", "SHANNON_ENTROPY"],
-                                           cutoffs_list = [50],
+                                           cutoffs_list = [10],
                                            table_title = None,
                                            highlight_best = True)
 

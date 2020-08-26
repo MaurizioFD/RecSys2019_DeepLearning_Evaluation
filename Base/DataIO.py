@@ -119,7 +119,7 @@ class DataIO(object):
             current_file_path = current_temp_folder + attrib_name
 
             if isinstance(attrib_data, DataFrame):
-                attrib_data.to_csv(current_file_path, index=False)
+                attrib_data.to_csv(current_file_path + ".csv", index=False)
                 attribute_to_file_name[attrib_name] = attrib_name + ".csv"
 
             elif isinstance(attrib_data, sps.spmatrix):
@@ -132,8 +132,22 @@ class DataIO(object):
                 attribute_to_file_name[attrib_name] = attrib_name + ".npy"
 
             else:
-                attribute_to_json_file[attrib_name] = attrib_data
-                attribute_to_file_name[attrib_name] = attrib_name + ".json"
+                # Try to parse it as json, if it fails and the data is a dictionary, use another zip file
+                try:
+                    _ = json.dumps(attrib_data, default=json_not_serializable_handler)
+                    attribute_to_json_file[attrib_name] = attrib_data
+                    attribute_to_file_name[attrib_name] = attrib_name + ".json"
+
+                except TypeError:
+
+                    if isinstance(attrib_data, dict):
+                        dataIO = DataIO(folder_path = current_temp_folder)
+                        dataIO.save_data(file_name = attrib_name, data_dict_to_save=attrib_data)
+                        attribute_to_file_name[attrib_name] = attrib_name + ".zip"
+
+                    else:
+                        raise TypeError("Type not recognized for attribute: {}".format(attrib_name))
+
 
 
         # Save list objects
@@ -210,6 +224,10 @@ class DataIO(object):
                 elif attrib_data_type == "npy":
                     # allow_pickle is FALSE to prevent using pickle and ensure portability
                     attrib_data = np.load(attrib_file_path, allow_pickle=False)
+
+                elif attrib_data_type == "zip":
+                    dataIO = DataIO(folder_path = current_temp_folder)
+                    attrib_data = dataIO.load_data(file_name = file_name)
 
                 elif attrib_data_type == "json":
                     with open(attrib_file_path, "r") as json_file:

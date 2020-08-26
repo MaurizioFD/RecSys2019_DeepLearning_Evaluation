@@ -69,11 +69,11 @@ def read_data_split_and_search(dataset_name,
     algorithm_dataset_string = "{}_{}_".format(ALGORITHM_NAME, dataset_name)
 
     plot_popularity_bias([URM_train + URM_validation, URM_test],
-                         ["URM train", "URM test"],
+                         ["Training data", "Test data"],
                          result_folder_path + algorithm_dataset_string + "popularity_plot")
 
-    save_popularity_statistics([URM_train + URM_validation, URM_test],
-                               ["URM train", "URM test"],
+    save_popularity_statistics([URM_train + URM_validation + URM_test, URM_train + URM_validation, URM_test],
+                               ["Full data", "Training data", "Test data"],
                                result_folder_path + algorithm_dataset_string + "popularity_statistics")
 
 
