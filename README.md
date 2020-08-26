@@ -1,6 +1,6 @@
 # DeepLearning RS Evaluation
 
-This repository contains the source code of the following articles:
+This repository was developed by <a href="https://mauriziofd.github.io/" target="_blank">Maurizio Ferrari Dacrema</a>, PhD candidate at Politecnico di Milano. See our [website](http://recsys.deib.polimi.it/) for more information on our research group. This reporsitory contains the source code of the following articles:
 * **"Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches"**, **RecSys 2019** [BibTex](https://dblp.uni-trier.de/rec/bibtex/conf/recsys/DacremaCJ19).
 Full text available on [ACM DL (open)](https://dl.acm.org/authorize?N684126), [ResearchGate](https://www.researchgate.net/publication/334506947_Are_We_Really_Making_Much_Progress_A_Worrying_Analysis_of_Recent_Neural_Recommendation_Approaches) or [ArXiv](https://arxiv.org/abs/1907.06902), source code of our experiments and full results are available [here](https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation).
 The [slides](Slides/RecSys2019_DeepLearning_Evaluation_Slides.pdf) and [poster](Slides/RecSys2019_DeepLearning_Evaluation_Poster.pdf) are also available.
