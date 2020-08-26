@@ -51,13 +51,16 @@ class EASE_R_Recommender(BaseItemSimilarityMatrixRecommender):
             self.URM_train = sps.csr_matrix(self.URM_train)
 
 
-        # Grahm matrix is X X^t, compute dot product
+        # Grahm matrix is X^t X, compute dot product
         similarity = Compute_Similarity(self.URM_train, shrink=0, topK=self.URM_train.shape[1], normalize=False, similarity = "cosine")
         grahm_matrix = similarity.compute_similarity().toarray()
 
         diag_indices = np.diag_indices(grahm_matrix.shape[0])
 
-        grahm_matrix[diag_indices] += l2_norm
+        # The Compute_Similarity object ensures the diagonal of the similarity matrix is zero
+        # in this case we need the diagonal as well, which is just the item popularity
+        item_popularity = np.ediff1d(self.URM_train.tocsc().indptr)
+        grahm_matrix[diag_indices] = item_popularity + l2_norm
 
         P = np.linalg.inv(grahm_matrix)
 
