@@ -74,11 +74,32 @@ from ParameterTuning.SearchAbstractClass import SearchInputRecommenderArgs
 
 
 def runParameterSearch_Hybrid(recommender_class, URM_train, ICM_object, ICM_name, URM_train_last_test = None,
-                              n_cases = 30, n_random_starts = 5, resume_from_saved = False, save_model = "best",
-                             evaluator_validation= None, evaluator_test=None, metric_to_optimize = "PRECISION",
-                             output_folder_path ="result_experiments/", parallelizeKNN = False, allow_weighting = True,
-                             similarity_type_list = None ):
+                                n_cases = 30, n_random_starts = 5, resume_from_saved = False,
+                                save_model = "best", evaluate_on_test = "best",
+                                evaluator_validation= None, evaluator_test=None, metric_to_optimize = "PRECISION",
+                                output_folder_path ="result_experiments/", parallelizeKNN = False, allow_weighting = True,
+                                similarity_type_list = None):
+    """
+    This function performs the hyperparameter optimization for a hybrid collaborative and content-based recommender
 
+    :param recommender_class:   Class of the recommender object to optimize, it must be a BaseRecommender type
+    :param URM_train:           Sparse matrix containing the URM training data
+    :param ICM_object:          Sparse matrix containing the ICM training data
+    :param ICM_name:            String containing the name of the ICM, will be used for the name of the output files
+    :param URM_train_last_test: Sparse matrix containing the union of URM training and validation data to be used in the last evaluation
+    :param n_cases:             Number of hyperparameter sets to explore
+    :param n_random_starts:     Number of the initial random hyperparameter values to explore, usually set at 30% of n_cases
+    :param resume_from_saved:   Boolean value, if True the optimization is resumed from the saved files, if False a new one is done
+    :param save_model:          ["no", "best", "last"] which of the models to save, see ParameterTuning/SearchAbstractClass for details
+    :param evaluate_on_test:    ["all", "best", "last", "no"] when to evaluate the model on the test data, see ParameterTuning/SearchAbstractClass for details
+    :param evaluator_validation:    Evaluator object to be used for the validation of each hyperparameter set
+    :param evaluator_test:          Evaluator object to be used for the test results, the output will only be saved but not used
+    :param metric_to_optimize:  String with the name of the metric to be optimized as contained in the output of the evaluator objects
+    :param output_folder_path:  Folder in which to save the output files
+    :param parallelizeKNN:      Boolean value, if True the various heuristics of the KNNs will be computed in parallel, if False sequentially
+    :param allow_weighting:     Boolean value, if True it enables the use of TF-IDF and BM25 to weight features, users and items in KNNs
+    :param similarity_type_list: List of strings with the similarity heuristics to be used for the KNNs
+    """
 
     # If directory does not exist, create
     if not os.path.exists(output_folder_path):
@@ -136,6 +157,7 @@ def runParameterSearch_Hybrid(recommender_class, URM_train, ICM_object, ICM_name
                                                        parameterSearch = parameterSearch,
                                                        resume_from_saved = resume_from_saved,
                                                        save_model = save_model,
+                                                       evaluate_on_test = evaluate_on_test,
                                                        n_cases = n_cases,
                                                        n_random_starts = n_random_starts,
                                                        output_folder_path = output_folder_path,
@@ -236,10 +258,32 @@ def run_KNNRecommender_on_similarity_type(similarity_type, parameterSearch,
 
 
 def runParameterSearch_Content(recommender_class, URM_train, ICM_object, ICM_name, URM_train_last_test = None,
-                               n_cases = 30, n_random_starts = 5, resume_from_saved = False, save_model = "best",
-                             evaluator_validation= None, evaluator_test=None, metric_to_optimize = "PRECISION",
-                             output_folder_path ="result_experiments/", parallelizeKNN = False, allow_weighting = True,
-                             similarity_type_list = None):
+                                n_cases = 30, n_random_starts = 5, resume_from_saved = False,
+                                save_model = "best", evaluate_on_test = "best",
+                                evaluator_validation= None, evaluator_test=None, metric_to_optimize = "PRECISION",
+                                output_folder_path ="result_experiments/", parallelizeKNN = False, allow_weighting = True,
+                                similarity_type_list = None):
+    """
+    This function performs the hyperparameter optimization for a content-based recommender
+
+    :param recommender_class:   Class of the recommender object to optimize, it must be a BaseRecommender type
+    :param URM_train:           Sparse matrix containing the URM training data
+    :param ICM_object:          Sparse matrix containing the ICM training data
+    :param ICM_name:            String containing the name of the ICM, will be used for the name of the output files
+    :param URM_train_last_test: Sparse matrix containing the union of URM training and validation data to be used in the last evaluation
+    :param n_cases:             Number of hyperparameter sets to explore
+    :param n_random_starts:     Number of the initial random hyperparameter values to explore, usually set at 30% of n_cases
+    :param resume_from_saved:   Boolean value, if True the optimization is resumed from the saved files, if False a new one is done
+    :param save_model:          ["no", "best", "last"] which of the models to save, see ParameterTuning/SearchAbstractClass for details
+    :param evaluate_on_test:    ["all", "best", "last", "no"] when to evaluate the model on the test data, see ParameterTuning/SearchAbstractClass for details
+    :param evaluator_validation:    Evaluator object to be used for the validation of each hyperparameter set
+    :param evaluator_test:          Evaluator object to be used for the test results, the output will only be saved but not used
+    :param metric_to_optimize:  String with the name of the metric to be optimized as contained in the output of the evaluator objects
+    :param output_folder_path:  Folder in which to save the output files
+    :param parallelizeKNN:      Boolean value, if True the various heuristics of the KNNs will be computed in parallel, if False sequentially
+    :param allow_weighting:     Boolean value, if True it enables the use of TF-IDF and BM25 to weight features, users and items in KNNs
+    :param similarity_type_list: List of strings with the similarity heuristics to be used for the KNNs
+    """
 
 
     # If directory does not exist, create
@@ -290,6 +334,7 @@ def runParameterSearch_Content(recommender_class, URM_train, ICM_object, ICM_nam
                                                    n_random_starts = n_random_starts,
                                                    resume_from_saved = resume_from_saved,
                                                    save_model = save_model,
+                                                   evaluate_on_test = evaluate_on_test,
                                                    output_folder_path = output_folder_path,
                                                    output_file_name_root = output_file_name_root,
                                                    metric_to_optimize = metric_to_optimize,
@@ -317,12 +362,33 @@ def runParameterSearch_Content(recommender_class, URM_train, ICM_object, ICM_nam
 
 
 
-def runParameterSearch_Collaborative(recommender_class, URM_train, URM_train_last_test = None, metric_to_optimize = "PRECISION",
+def runParameterSearch_Collaborative(recommender_class, URM_train, URM_train_last_test = None,
+                                     n_cases = 35, n_random_starts = 5, resume_from_saved = False,
+                                     save_model = "best",  evaluate_on_test = "best",
                                      evaluator_validation = None, evaluator_test = None, evaluator_validation_earlystopping = None,
+                                     metric_to_optimize = "PRECISION",
                                      output_folder_path ="result_experiments/", parallelizeKNN = True,
-                                     n_cases = 35, n_random_starts = 5, resume_from_saved = False, save_model = "best",
-                                     allow_weighting = True, evaluate_on_test = "best",
-                                     similarity_type_list = None):
+                                     allow_weighting = True,similarity_type_list = None):
+    """
+    This function performs the hyperparameter optimization for a collaborative recommender
+
+    :param recommender_class:   Class of the recommender object to optimize, it must be a BaseRecommender type
+    :param URM_train:           Sparse matrix containing the URM training data
+    :param URM_train_last_test: Sparse matrix containing the union of URM training and validation data to be used in the last evaluation
+    :param n_cases:             Number of hyperparameter sets to explore
+    :param n_random_starts:     Number of the initial random hyperparameter values to explore, usually set at 30% of n_cases
+    :param resume_from_saved:   Boolean value, if True the optimization is resumed from the saved files, if False a new one is done
+    :param save_model:          ["no", "best", "last"] which of the models to save, see ParameterTuning/SearchAbstractClass for details
+    :param evaluate_on_test:    ["all", "best", "last", "no"] when to evaluate the model on the test data, see ParameterTuning/SearchAbstractClass for details
+    :param evaluator_validation:    Evaluator object to be used for the validation of each hyperparameter set
+    :param evaluator_validation_earlystopping:   Evaluator object to be used for the earlystopping of ML algorithms, can be the same of evaluator_validation
+    :param evaluator_test:          Evaluator object to be used for the test results, the output will only be saved but not used
+    :param metric_to_optimize:  String with the name of the metric to be optimized as contained in the output of the evaluator objects
+    :param output_folder_path:  Folder in which to save the output files
+    :param parallelizeKNN:      Boolean value, if True the various heuristics of the KNNs will be computed in parallel, if False sequentially
+    :param allow_weighting:     Boolean value, if True it enables the use of TF-IDF and BM25 to weight features, users and items in KNNs
+    :param similarity_type_list: List of strings with the similarity heuristics to be used for the KNNs
+    """
 
 
 
