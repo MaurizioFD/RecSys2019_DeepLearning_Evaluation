@@ -8,6 +8,8 @@ The [slides](Slides/RecSys2019_DeepLearning_Evaluation_Slides.pdf) and [poster](
 * **"Critically Examining the Claimed Value of Convolutions over User-Item Embedding Maps for Recommender Systems"**, **CIKM 2020**  [ArXiv](https://arxiv.org/abs/2007.11893), see related documentation [HERE](#Ablation-experiment-for-CNN-algorithms-on-embeddings).
 * (Extended version of the RecSys 2019 paper, still under review) **"A Troubling Analysis of Reproducibility and Progress in Recommender Systems Research"**. The preprint is available on [ArXiv](https://arxiv.org/abs/1911.07698).
 
+A small example on how to use the baseline models is in _run_example_usage.py_.
+
 We are still actively pursuing this research direction in evaluation and reproducibility, we are open to collaboration with other reseachers. Follow our project on [ResearchGate](https://www.researchgate.net/project/Recommender-systems-reproducibility-and-evaluation)!
 
 Please cite our articles if you use this repository or our implementations of baseline algorithms, remember also to cite the original authors if you use our porting of the DL algorithms. The BibTex code is linked above, next to the article.
