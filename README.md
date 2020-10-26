@@ -1,11 +1,11 @@
 # DeepLearning RS Evaluation
 
-This repository was developed by <a href="https://mauriziofd.github.io/" target="_blank">Maurizio Ferrari Dacrema</a>, PhD candidate at Politecnico di Milano. See our [website](http://recsys.deib.polimi.it/) for more information on our research group. This reporsitory contains the source code of the following articles:
+This repository was developed by <a href="https://mauriziofd.github.io/" target="_blank">Maurizio Ferrari Dacrema</a>, postdoctoral researcher at Politecnico di Milano. See our [website](http://recsys.deib.polimi.it/) for more information on our research group. This reporsitory contains the source code of the following articles:
 * **"Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches"**, **RecSys 2019** [BibTex](https://dblp.uni-trier.de/rec/bibtex/conf/recsys/DacremaCJ19).
 Full text available on [ACM DL (open)](https://dl.acm.org/authorize?N684126), [ResearchGate](https://www.researchgate.net/publication/334506947_Are_We_Really_Making_Much_Progress_A_Worrying_Analysis_of_Recent_Neural_Recommendation_Approaches) or [ArXiv](https://arxiv.org/abs/1907.06902), source code of our experiments and full results are available [here](https://github.com/MaurizioFD/RecSys2019_DeepLearning_Evaluation).
 The [slides](Slides/RecSys2019_DeepLearning_Evaluation_Slides.pdf) and [poster](Slides/RecSys2019_DeepLearning_Evaluation_Poster.pdf) are also available.
 * **"Methodological Issues in Recommender Systems Research (Extended Abstract)"**, **IJCAI 2020** [BibTex](https://dblp.uni-trier.de/rec/bibtex/conf/ijcai/DacremaCJ20), [PDF](https://www.ijcai.org/Proceedings/2020/650).
-* **"Critically Examining the Claimed Value of Convolutions over User-Item Embedding Maps for Recommender Systems"**, **CIKM 2020**  [ArXiv](https://arxiv.org/abs/2007.11893), see related documentation [HERE](#Ablation-experiment-for-CNN-algorithms-on-embeddings).
+* **"Critically Examining the Claimed Value of Convolutions over User-Item Embedding Maps for Recommender Systems"**, **CIKM 2020**  [ACM DL](https://dl.acm.org/doi/abs/10.1145/3340531.3411901), [ArXiv](https://arxiv.org/abs/2007.11893), see related documentation [HERE](#Ablation-experiment-for-CNN-algorithms-on-embeddings).
 * (Extended version of the RecSys 2019 paper, still under review) **"A Troubling Analysis of Reproducibility and Progress in Recommender Systems Research"**. The preprint is available on [ArXiv](https://arxiv.org/abs/1911.07698).
 
 A small example on how to use the baseline models is in _run_example_usage.py_.
