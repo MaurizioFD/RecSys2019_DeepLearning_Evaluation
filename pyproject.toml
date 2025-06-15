@@ -1,0 +1,111 @@
+[tool.poetry]
+name = "recommender-systems-evaluation"
+version = "0.1.0"
+description = "A comprehensive evaluation framework for deep learning-based recommender systems"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+license = "LICENSE"
+packages = [{include = "*", from = "."}]
+
+[tool.poetry.dependencies]
+python = ">=3.7,<3.12"
+# Core dependencies - versions updated for compatibility
+numpy = ">=1.16.2"
+pandas = ">=0.24.2"
+scipy = ">=1.2.1"
+scikit-learn = ">=0.20.3"
+matplotlib = ">=3.0.3"
+seaborn = ">=0.9.0"
+tqdm = ">=4.31.1"
+h5py = ">=2.9.0"
+# Note: TensorFlow 1.x and related packages would need to be installed separately
+# as they have specific version requirements and compatibility issues
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.11.0"
+
+[tool.poetry.scripts]
+test = "pytest:main"
+tests = "pytest:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "--cov=.",
+    "--cov-branch",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+    "-v"
+]
+markers = [
+    "unit: marks tests as unit tests (fast, isolated)",
+    "integration: marks tests as integration tests (may require external resources)",
+    "slow: marks tests as slow running"
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning"
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*_test.py",
+    "*/CythonCompiler/*",
+    "*/setup.py",
+    "*/conf.py",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/virtualenv/*",
+    "*/.venv/*",
+    "*/site-packages/*"
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+fail_under = 80
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if 0:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod"
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# Note: The original requirements.txt contains legacy dependencies that may need special handling:
+# - tensorflow==1.13.1 (requires Python <=3.7)
+# - keras==2.2.4 (old version, now part of TensorFlow)
+# - dm-sonnet==1.29 (DeepMind library, may have specific requirements)
+# - Other ML libraries with specific version constraints
+#
+# For development requiring these specific versions, consider:
+# 1. Using a Python 3.7 virtual environment
+# 2. Installing from requirements.txt directly: pip install -r requirements.txt
+# 3. Using Docker containers with appropriate base images
