@@ -123,3 +123,9 @@ ENV/
 
 # macOS cache
 **/.DS_Store
+
+# Poetry
+poetry.lock
+
+# Claude
+.claude/*
